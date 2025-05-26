@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import dynamic from 'next/dynamic';
 
 const SessionHistory = dynamic(() => import('./SessionHistory'), { ssr: false });
@@ -32,7 +32,9 @@ export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isW
   });
   
   const [isRunning, setIsRunning] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<number>(Date.now());
+  const lastUpdateRef = useRef<number>(Date.now());
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const hiddenTimeRef = useRef<number | null>(null);
   
   // Clear all sessions
   const clearSessions = (): void => {
@@ -51,63 +53,117 @@ export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isW
     }
   }, [sessions]);
 
-  // Handle session tracking
+  // Handle page visibility changes to prevent timer issues when switching tabs
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    if (typeof window === 'undefined') return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Page is now hidden - store the time when it was hidden
+        hiddenTimeRef.current = Date.now();
+      } else {
+        // Page is now visible - adjust for time lost while hidden
+        if (hiddenTimeRef.current && isRunning) {
+          const timeHidden = Date.now() - hiddenTimeRef.current;
+          // Update lastUpdate to account for the time the page was hidden
+          lastUpdateRef.current = Date.now();
+          console.log(`Page was hidden for ${timeHidden}ms, adjusting timer`);
+        }
+        hiddenTimeRef.current = null;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isRunning]);
+
+  // Handle session tracking with improved timer management
+  useEffect(() => {
+    // Clear any existing timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
 
     if (isFaceDetected) {
       // Start new session if not already running
       if (!isRunning) {
+        const now = Date.now();
         setCurrentSession({
-          startTime: Date.now(),
+          startTime: now,
           elapsedTime: 0,
         });
         setIsRunning(true);
-        setLastUpdate(Date.now());
+        lastUpdateRef.current = now;
       }
 
-      // Update elapsed time every second
-      timer = setInterval(() => {
+      // Update elapsed time every second with more accurate timing
+      timerRef.current = setInterval(() => {
+        // Skip update if page is hidden
+        if (document.hidden) return;
+        
         const now = Date.now();
-        const delta = (now - lastUpdate) / 1000; // in seconds
-        setLastUpdate(now);
+        const delta = (now - lastUpdateRef.current) / 1000; // in seconds
+        lastUpdateRef.current = now;
         
         setCurrentSession(prev => ({
           ...prev,
           elapsedTime: prev.elapsedTime + delta
         }));
-      }, 1000);
+      }, 100); // Update more frequently for smoother display
+      
     } else if (isRunning) {
       // End current session
       const endTime = Date.now();
-      const newSession: FaceSession = {
-        id: endTime,
-        startTime: currentSession.startTime || endTime,
-        endTime,
-        duration: currentSession.elapsedTime + ((endTime - lastUpdate) / 1000)
-      };
+      const finalDelta = (endTime - lastUpdateRef.current) / 1000;
       
-      // Prevent duplicate sessions
-      setSessions(prev => {
-        // Check if a session with this ID already exists
-        const sessionExists = prev.some(session => 
-          session.id === newSession.id || 
-          (session.startTime === newSession.startTime && session.endTime === newSession.endTime)
-        );
+      setCurrentSession(prev => {
+        const newSession: FaceSession = {
+          id: endTime,
+          startTime: prev.startTime || endTime,
+          endTime,
+          duration: prev.elapsedTime + finalDelta
+        };
         
-        if (sessionExists) {
-          return prev; // Skip adding if duplicate exists
-        }
+        // Prevent duplicate sessions
+        setSessions(prevSessions => {
+          const sessionExists = prevSessions.some(session => 
+            session.id === newSession.id || 
+            (session.startTime === newSession.startTime && session.endTime === newSession.endTime)
+          );
+          
+          if (sessionExists) {
+            return prevSessions;
+          }
+          
+          return [newSession, ...prevSessions];
+        });
         
-        return [newSession, ...prev];
+        return prev;
       });
+      
       setIsRunning(false);
     }
 
     return () => {
-      if (timer) clearInterval(timer);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     };
-  }, [isFaceDetected, isRunning, currentSession.startTime, currentSession.elapsedTime, lastUpdate]);
+  }, [isFaceDetected, isRunning]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
 
   // Format time in seconds to HH:MM:SS
   const formatDuration = (seconds: number): string => {

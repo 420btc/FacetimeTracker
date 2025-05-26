@@ -37,6 +37,8 @@ export default function Home() {
   const animationRef = useRef<number | null>(null);
   const detectorRef = useRef<faceLandmarksDetection.FaceLandmarksDetector | null>(null);
   const wasFaceDetected = useRef(false);
+  const isPageHiddenRef = useRef(false);
+  
   const [faceCount, setFaceCount] = useState(0);
   const [detectionHistory, setDetectionHistory] = useState<DetectionEvent[]>(() => {
     if (typeof window !== 'undefined') {
@@ -62,6 +64,34 @@ export default function Home() {
     }
   };
 
+  // Handle page visibility to prevent issues when switching tabs
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleVisibilityChange = () => {
+      isPageHiddenRef.current = document.hidden;
+      
+      if (!document.hidden && isWebcamActive) {
+        // Page became visible again - restart detection if webcam is active
+        console.log('Page became visible, restarting detection');
+        runDetector();
+      } else if (document.hidden) {
+        // Page became hidden - pause detection
+        console.log('Page became hidden, pausing detection');
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+          animationRef.current = null;
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isWebcamActive]);
+
   // Input resolution configuration
   const inputResolution = { width: 640, height: 480 }; // Tamaño fijo para escritorio
     
@@ -79,7 +109,14 @@ export default function Home() {
 
   // Load and configure the model
   const runDetector = useCallback(async () => {
-    if (!isWebcamActive) return; // Don't run detector if webcam is off
+    if (!isWebcamActive || isPageHiddenRef.current) return; // Don't run detector if webcam is off or page is hidden
+    
+    // Cancel any existing animation frame
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    
     try {
       // Set WebGL backend with fallback to CPU if needed
       try {
@@ -94,118 +131,178 @@ export default function Home() {
 
       // Load the MediaPipe FaceMesh model
       const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
-      const detectorConfig: faceLandmarksDetection.MediaPipeFaceMeshMediaPipeModelConfig = {
-        runtime: 'mediapipe',
+      const detectorConfig = {
+        runtime: 'mediapipe' as const,
         solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh',
         refineLandmarks: true,
+        maxFaces: 10,
       };
-      
-      detectorRef.current = await faceLandmarksDetection.createDetector(model, detectorConfig);
-      console.log('Face detector model loaded');
+
+      console.log('Loading face detection model...');
+      const detector = await faceLandmarksDetection.createDetector(model, detectorConfig);
+      detectorRef.current = detector;
+      console.log('Face detection model loaded successfully');
 
       // Function to detect faces
       const detect = async () => {
-        if (!webcamRef.current?.video || !canvasRef.current) return;
-        
-        const video = webcamRef.current.video;
-        const faces = await detectorRef.current?.estimateFaces(video) || [];
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        
-        if (!ctx) return;
-        
-        // Clear previous frame
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Check if any face is detected
-        const hasFace = faces.length > 0;
-        
-        // If face detection state changed
-        if (hasFace && !wasFaceDetected.current) {
-          // New face detected
-          const newCount = faceCount + 1;
-          const timestamp = Date.now();
-          const newDetection = {
-            id: timestamp,
-            timestamp,
-            timeString: formatTime(timestamp),
-          };
-          
-          setFaceCount(newCount);
-          setDetectionHistory(prev => [newDetection, ...prev].slice(0, 50));
-          console.log('Nueva cara detectada. Total:', newCount);
+        // Skip detection if page is hidden or webcam is inactive
+        if (isPageHiddenRef.current || !isWebcamActive) {
+          return;
         }
         
-        // Update face detection state
-        setIsFaceDetected(hasFace);
-        wasFaceDetected.current = hasFace;
-        
-        // Draw facial landmarks and bounding box
-        faces.forEach((face: { keypoints: Keypoint[] }) => {
-          // Calcular bounding box basado en los keypoints
-          if (face.keypoints && face.keypoints.length > 0) {
-            let minX = Infinity, minY = Infinity;
-            let maxX = -Infinity, maxY = -Infinity;
-            
-            // Encontrar los límites de los keypoints
-            face.keypoints.forEach((keypoint: Keypoint) => {
-              minX = Math.min(minX, keypoint.x);
-              minY = Math.min(minY, keypoint.y);
-              maxX = Math.max(maxX, keypoint.x);
-              maxY = Math.max(maxY, keypoint.y);
-            });
-            
-            // Añadir un poco de margen
-            const margin = 20;
-            minX = Math.max(0, minX - margin);
-            minY = Math.max(0, minY - margin);
-            maxX = Math.min(canvas.width, maxX + margin);
-            maxY = Math.min(canvas.height, maxY + margin);
-            
-            const width = maxX - minX;
-            const height = maxY - minY;
-            
-            // Dibujar el bounding box
-            ctx.strokeStyle = '#00FF00'; // Color verde para el borde
-            ctx.lineWidth = 2;
-            ctx.strokeRect(minX, minY, width, height);
-            
-            // Añadir etiqueta con fondo para mejor legibilidad
-            const label = 'Cara detectada';
-            const textWidth = ctx.measureText(label).width;
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-            ctx.fillRect(minX - 2, minY - 17, textWidth + 4, 16);
-            ctx.fillStyle = '#00FF00';
-            ctx.font = '12px Arial';
-            ctx.fillText(label, minX, minY > 10 ? minY - 5 : 10);
+        if (
+          typeof webcamRef.current !== "undefined" &&
+          webcamRef.current !== null &&
+          webcamRef.current.video?.readyState === 4 &&
+          detectorRef.current
+        ) {
+          const video = webcamRef.current.video;
+          const videoWidth = video.videoWidth;
+          const videoHeight = video.videoHeight;
+
+          // Set video width and height
+          if (webcamRef.current.video) {
+            webcamRef.current.video.width = videoWidth;
+            webcamRef.current.video.height = videoHeight;
           }
-          
-          // Dibujar puntos de referencia faciales
-          face.keypoints.forEach((keypoint: Keypoint) => {
-            if (keypoint.name?.includes('lips')) {
-              ctx.fillStyle = '#FF0000'; // Rojo para labios
-            } else if (keypoint.name?.includes('eye')) {
-              ctx.fillStyle = '#00FF00'; // Verde para ojos
-            } else {
-              ctx.fillStyle = '#FFFFFF'; // Blanco para otros puntos
-            }
+
+          // Set canvas width and height
+          if (canvasRef.current) {
+            canvasRef.current.width = videoWidth;
+            canvasRef.current.height = videoHeight;
+          }
+
+          try {
+            // Make Detections
+            const faces = await detectorRef.current.estimateFaces(video);
             
-            ctx.beginPath();
-            ctx.arc(keypoint.x, keypoint.y, 1, 0, 2 * Math.PI);
-            ctx.fill();
-          });
-        });
-        
-        // Continue detection in the next frame
-        if (typeof window !== 'undefined') {
-          animationRef.current = requestAnimationFrame(detect as FrameRequestCallback);
+            // Get canvas context
+            const canvas = canvasRef.current;
+            const ctx = canvas?.getContext("2d");
+            
+            if (ctx && canvas) {
+              // Clear previous drawings
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              
+              const currentlyDetected = faces.length > 0;
+              
+              // Update face detection state
+              setIsFaceDetected(currentlyDetected);
+              
+              // Update face count to reflect current number of faces (0 or 1)
+              setFaceCount(faces.length);
+              
+              // Handle face connection/disconnection sounds and events
+              if (currentlyDetected && !wasFaceDetected.current) {
+                // Face just connected - play connection sound
+                try {
+                  const connectSound = new Audio('/sounds/conectado.mp3');
+                  connectSound.volume = 0.5; // Adjust volume as needed
+                  connectSound.play().catch(e => console.log('Could not play connect sound:', e));
+                } catch (error) {
+                  console.log('Error creating connect sound:', error);
+                }
+                
+                // Add to detection history
+                const newDetection: DetectionEvent = {
+                  id: Date.now(),
+                  timestamp: Date.now(),
+                  timeString: formatTime(Date.now())
+                };
+                
+                setDetectionHistory(prev => [newDetection, ...prev]);
+                
+                console.log(`Face connected! Current faces: ${faces.length}`);
+              } else if (!currentlyDetected && wasFaceDetected.current) {
+                // Face just disconnected - play disconnection sound
+                try {
+                  const disconnectSound = new Audio('/sounds/desconectado.mp3');
+                  disconnectSound.volume = 0.5; // Adjust volume as needed
+                  disconnectSound.play().catch(e => console.log('Could not play disconnect sound:', e));
+                } catch (error) {
+                  console.log('Error creating disconnect sound:', error);
+                }
+                
+                console.log(`Face disconnected! Current faces: ${faces.length}`);
+              }
+              
+              // Update the previous detection state
+              wasFaceDetected.current = currentlyDetected;
+              
+              // Draw facial landmarks and bounding box
+              faces.forEach((face) => {
+                const keypoints = face.keypoints;
+                
+                // Calculate bounding box based on keypoints
+                if (keypoints && keypoints.length > 0) {
+                  let minX = Infinity, minY = Infinity;
+                  let maxX = -Infinity, maxY = -Infinity;
+                  
+                  // Find keypoint boundaries
+                  keypoints.forEach((keypoint: Keypoint) => {
+                    minX = Math.min(minX, keypoint.x);
+                    minY = Math.min(minY, keypoint.y);
+                    maxX = Math.max(maxX, keypoint.x);
+                    maxY = Math.max(maxY, keypoint.y);
+                  });
+                  
+                  // Add some margin
+                  const margin = 20;
+                  minX = Math.max(0, minX - margin);
+                  minY = Math.max(0, minY - margin);
+                  maxX = Math.min(canvas.width, maxX + margin);
+                  maxY = Math.min(canvas.height, maxY + margin);
+                  
+                  const width = maxX - minX;
+                  const height = maxY - minY;
+                  
+                  // Draw the bounding box
+                  ctx.strokeStyle = '#00FF00'; // Green color for the border
+                  ctx.lineWidth = 2;
+                  ctx.strokeRect(minX, minY, width, height);
+                  
+                  // Add label with background for better readability
+                  const label = 'Cara detectada';
+                  const textWidth = ctx.measureText(label).width;
+                  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                  ctx.fillRect(minX - 2, minY - 17, textWidth + 4, 16);
+                  ctx.fillStyle = '#00FF00';
+                  ctx.font = '12px Arial';
+                  ctx.fillText(label, minX, minY > 10 ? minY - 5 : 10);
+                }
+                
+                // Draw facial landmark points
+                keypoints.forEach((keypoint: Keypoint) => {
+                  if (keypoint.name?.includes('lips')) {
+                    ctx.fillStyle = '#FF0000'; // Red for lips
+                  } else if (keypoint.name?.includes('eye')) {
+                    ctx.fillStyle = '#00FF00'; // Green for eyes
+                  } else {
+                    ctx.fillStyle = '#FFFFFF'; // White for other points
+                  }
+                  
+                  ctx.beginPath();
+                  ctx.arc(keypoint.x, keypoint.y, 1, 0, 2 * Math.PI);
+                  ctx.fill();
+                });
+              });
+            }
+          } catch (error) {
+            console.error('Error during face detection:', error);
+          } finally {
+            // Continue the detection loop if webcam is still active and page is visible
+            if (isWebcamActive && !isPageHiddenRef.current) {
+              animationRef.current = requestAnimationFrame(detect);
+            }
+          }
         }
       };
-
-      // Start detection
+      
+      // Start the detection loop
       detect();
+      
     } catch (error) {
-      console.error('Error loading model:', error);
+      console.error('Error loading face detection model:', error);
     }
   }, [isWebcamActive, faceCount]);
 
