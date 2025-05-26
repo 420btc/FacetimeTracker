@@ -107,6 +107,31 @@ export default function Home() {
     setIsWebcamActive(prev => !prev);
   };
 
+  // Function to refresh detection by simulating visibility change
+  const refreshDetection = () => {
+    console.log('Simulating page visibility change to refresh detection...');
+    
+    // Simulate page becoming hidden
+    isPageHiddenRef.current = true;
+    
+    // Cancel current animation frame (simulating tab switch)
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    
+    // After a brief moment, simulate page becoming visible again
+    setTimeout(() => {
+      isPageHiddenRef.current = false;
+      
+      // Restart detection as if we just returned to the tab
+      if (isWebcamActive && detectorRef.current) {
+        console.log('Restarting detection after simulated visibility change');
+        runDetector();
+      }
+    }, 200); // Small delay to simulate the visibility change
+  };
+
   // Load and configure the model
   const runDetector = useCallback(async () => {
     if (!isWebcamActive || isPageHiddenRef.current) return; // Don't run detector if webcam is off or page is hidden
@@ -417,6 +442,7 @@ export default function Home() {
             isFaceDetected={isFaceDetected} 
             isWebcamActive={isWebcamActive}
             onWebcamToggle={toggleWebcam}
+            onRefreshDetection={refreshDetection}
           />
         </div>
       </div>

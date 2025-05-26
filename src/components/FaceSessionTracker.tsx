@@ -16,9 +16,10 @@ interface FaceSessionTrackerProps {
   isFaceDetected: boolean;
   onWebcamToggle: () => void;
   isWebcamActive: boolean;
+  onRefreshDetection?: () => void;
 }
 
-export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isWebcamActive }: FaceSessionTrackerProps) {
+export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isWebcamActive, onRefreshDetection }: FaceSessionTrackerProps) {
   const [currentSession, setCurrentSession] = useState<{
     startTime: number | null;
     elapsedTime: number;
@@ -199,16 +200,26 @@ export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isW
           <h3 className="text-2xl font-semibold text-white">
             {isWebcamActive ? '🟢' : '🔴'} Sesión {isWebcamActive ? 'Activa' : 'Inactiva'}
           </h3>
-          <button
-            onClick={onWebcamToggle}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              isWebcamActive 
-                ? 'bg-red-600 hover:bg-red-700 text-white' 
-                : 'bg-green-600 hover:bg-green-700 text-white'
-            }`}
-          >
-            {isWebcamActive ? 'Desactivar Cámara' : 'Activar Cámara'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={onWebcamToggle}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                isWebcamActive 
+                  ? 'bg-red-600 hover:bg-red-700 text-white' 
+                  : 'bg-green-600 hover:bg-green-700 text-white'
+              }`}
+            >
+              {isWebcamActive ? 'Desactivar Cámara' : 'Activar Cámara'}
+            </button>
+            {onRefreshDetection && (
+              <button
+                onClick={onRefreshDetection}
+                className="px-3 py-1.5 rounded-md text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Refrescar Detección
+              </button>
+            )}
+          </div>
         </div>
         
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
