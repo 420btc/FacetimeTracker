@@ -223,17 +223,24 @@ export default function Home() {
                 }
                 
                 // Draw facial landmark points
-                keypoints.forEach((keypoint: Keypoint) => {
-                  if (keypoint.name?.includes('lips')) {
-                    ctx.fillStyle = '#FF0000';
-                  } else if (keypoint.name?.includes('eye')) {
-                    ctx.fillStyle = '#00FF00';
+                keypoints.forEach((keypoint: Keypoint, index: number) => {
+                  // MediaPipe FaceMesh keypoint indices for different facial features
+                  // Eyes: indices 33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246, 249, 263, 362, 398, 384, 385, 386, 387, 388, 466, 388, 387, 386, 385, 384, 398
+                  // Simplified eye detection using key eye corner points
+                  const leftEyeIndices = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246];
+                  const rightEyeIndices = [249, 263, 362, 398, 384, 385, 386, 387, 388, 466, 388, 387, 386, 385, 384, 398];
+                  const lipIndices = [0, 17, 18, 200, 199, 175, 0, 17, 18, 200, 199, 175, 13, 82, 81, 80, 78, 95, 88, 178, 87, 14, 317, 402, 318, 324, 308, 375, 321, 308, 324, 318];
+                  
+                  if (leftEyeIndices.includes(index) || rightEyeIndices.includes(index)) {
+                    ctx.fillStyle = '#00FF00'; // Green for eyes
+                  } else if (lipIndices.includes(index)) {
+                    ctx.fillStyle = '#FF0000'; // Red for lips
                   } else {
-                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillStyle = '#FFFFFF'; // White for other points
                   }
                   
                   ctx.beginPath();
-                  ctx.arc(keypoint.x, keypoint.y, 1, 0, 2 * Math.PI);
+                  ctx.arc(keypoint.x, keypoint.y, 1, 0, 2 * Math.PI); // Back to 1px as requested
                   ctx.fill();
                 });
               });
