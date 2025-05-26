@@ -37,11 +37,6 @@ export default function Home() {
     return [];
   });
   
-  const [isModelLoaded, setIsModelLoaded] = useState(false);
-  const [detectionCount, setDetectionCount] = useState(0);
-  const [isDetecting, setIsDetecting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const detectorRef = useRef<faceLandmarksDetection.FaceLandmarksDetector | null>(null);
@@ -123,9 +118,6 @@ export default function Home() {
             
             // ALWAYS update face detection state (even when hidden)
             setIsFaceDetected(currentlyDetected);
-            
-            // ALWAYS update face count (even when hidden)
-            setDetectionCount(faces.length);
             
             // ALWAYS handle face connection/disconnection sounds and events
             if (currentlyDetected && !wasFaceDetected.current) {
