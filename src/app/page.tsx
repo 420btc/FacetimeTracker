@@ -34,9 +34,9 @@ function formatTime(timestamp: number): string {
 export default function Home() {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number | null>(null);
   const detectorRef = useRef<faceLandmarksDetection.FaceLandmarksDetector | null>(null);
   const wasFaceDetected = useRef(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isPageHiddenRef = useRef(false);
   
   const [faceCount, setFaceCount] = useState(0);
@@ -64,34 +64,6 @@ export default function Home() {
     }
   };
 
-  // Handle page visibility to prevent issues when switching tabs
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const handleVisibilityChange = () => {
-      isPageHiddenRef.current = document.hidden;
-      
-      if (!document.hidden && isWebcamActive) {
-        // Page became visible again - restart detection if webcam is active
-        console.log('Page became visible, restarting detection');
-        runDetector();
-      } else if (document.hidden) {
-        // Page became hidden - pause detection
-        console.log('Page became hidden, pausing detection');
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-          animationRef.current = null;
-        }
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [isWebcamActive]);
-
   // Input resolution configuration
   const inputResolution = { width: 640, height: 480 }; // Tamaño fijo para escritorio
     
@@ -102,82 +74,33 @@ export default function Home() {
     aspectRatio: 1.333, // 4:3 para mantener relación de aspecto
   };
 
-  // Toggle webcam on/off
-  const toggleWebcam = () => {
-    setIsWebcamActive(prev => !prev);
-  };
-
-  // Function to refresh detection by simulating visibility change
-  const refreshDetection = () => {
-    console.log('Simulating page visibility change to refresh detection...');
-    
-    // Simulate page becoming hidden
-    isPageHiddenRef.current = true;
-    
-    // Cancel current animation frame (simulating tab switch)
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-      animationRef.current = null;
-    }
-    
-    // After a brief moment, simulate page becoming visible again
-    setTimeout(() => {
-      isPageHiddenRef.current = false;
-      
-      // Restart detection as if we just returned to the tab
-      if (isWebcamActive && detectorRef.current) {
-        console.log('Restarting detection after simulated visibility change');
-        runDetector();
-      }
-    }, 200); // Small delay to simulate the visibility change
-  };
-
   // Load and configure the model
   const runDetector = useCallback(async () => {
-    if (!isWebcamActive || isPageHiddenRef.current) return; // Don't run detector if webcam is off or page is hidden
+    if (!isWebcamActive) return; // Only stop if webcam is off, NOT if page is hidden
     
-    // Cancel any existing animation frame
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-      animationRef.current = null;
+    // Cancel any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
     
     try {
-      // Set WebGL backend with fallback to CPU if needed
-      try {
-        await tf.setBackend('webgl');
-        await tf.ready();
-        console.log('TensorFlow.js is ready with WebGL');
-      } catch (error) {
-        console.warn('WebGL not available, falling back to CPU', error);
-        await tf.setBackend('cpu');
-        await tf.ready();
-      }
-
-      // Load the MediaPipe FaceMesh model
+      // Load the faceLandmarksDetection model
       const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
-      const detectorConfig = {
-        runtime: 'mediapipe' as const,
+      const detectorConfig: faceLandmarksDetection.MediaPipeFaceMeshMediaPipeModelConfig = {
+        runtime: 'mediapipe',
         solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh',
         refineLandmarks: true,
-        maxFaces: 10,
       };
-
-      console.log('Loading face detection model...');
+      
       const detector = await faceLandmarksDetection.createDetector(model, detectorConfig);
       detectorRef.current = detector;
-      console.log('Face detection model loaded successfully');
 
       // Function to detect faces
       const detect = async () => {
-        // Skip detection if page is hidden or webcam is inactive
-        if (isPageHiddenRef.current || !isWebcamActive) {
-          return;
-        }
-        
+        // Always run detection if webcam is active, regardless of page visibility
         if (
-          typeof webcamRef.current !== "undefined" &&
-          webcamRef.current !== null &&
+          webcamRef.current?.video &&
           webcamRef.current.video?.readyState === 4 &&
           detectorRef.current
         ) {
@@ -198,62 +121,66 @@ export default function Home() {
           }
 
           try {
-            // Make Detections
+            // Make Detections - ALWAYS run, even when page is hidden
             const faces = await detectorRef.current.estimateFaces(video);
             
             // Get canvas context
             const canvas = canvasRef.current;
             const ctx = canvas?.getContext("2d");
             
-            if (ctx && canvas) {
+            // Only update visual elements if page is visible
+            if (ctx && canvas && !isPageHiddenRef.current) {
               // Clear previous drawings
               ctx.clearRect(0, 0, canvas.width, canvas.height);
-              
-              const currentlyDetected = faces.length > 0;
-              
-              // Update face detection state
-              setIsFaceDetected(currentlyDetected);
-              
-              // Update face count to reflect current number of faces (0 or 1)
-              setFaceCount(faces.length);
-              
-              // Handle face connection/disconnection sounds and events
-              if (currentlyDetected && !wasFaceDetected.current) {
-                // Face just connected - play connection sound
-                try {
-                  const connectSound = new Audio('/sounds/conectado.mp3');
-                  connectSound.volume = 0.5; // Adjust volume as needed
-                  connectSound.play().catch(e => console.log('Could not play connect sound:', e));
-                } catch (error) {
-                  console.log('Error creating connect sound:', error);
-                }
-                
-                // Add to detection history
-                const newDetection: DetectionEvent = {
-                  id: Date.now(),
-                  timestamp: Date.now(),
-                  timeString: formatTime(Date.now())
-                };
-                
-                setDetectionHistory(prev => [newDetection, ...prev]);
-                
-                console.log(`Face connected! Current faces: ${faces.length}`);
-              } else if (!currentlyDetected && wasFaceDetected.current) {
-                // Face just disconnected - play disconnection sound
-                try {
-                  const disconnectSound = new Audio('/sounds/desconectado.mp3');
-                  disconnectSound.volume = 0.5; // Adjust volume as needed
-                  disconnectSound.play().catch(e => console.log('Could not play disconnect sound:', e));
-                } catch (error) {
-                  console.log('Error creating disconnect sound:', error);
-                }
-                
-                console.log(`Face disconnected! Current faces: ${faces.length}`);
+            }
+            
+            const currentlyDetected = faces.length > 0;
+            
+            // ALWAYS update face detection state (even when hidden)
+            setIsFaceDetected(currentlyDetected);
+            
+            // ALWAYS update face count (even when hidden)
+            setFaceCount(faces.length);
+            
+            // ALWAYS handle face connection/disconnection sounds and events
+            if (currentlyDetected && !wasFaceDetected.current) {
+              // Face just connected - play connection sound
+              try {
+                const connectSound = new Audio('/sounds/conectado.mp3');
+                connectSound.volume = 0.5;
+                connectSound.play().catch(e => console.log('Could not play connect sound:', e));
+              } catch (error) {
+                console.log('Error creating connect sound:', error);
               }
               
-              // Update the previous detection state
-              wasFaceDetected.current = currentlyDetected;
+              // Add to detection history
+              const newDetection: DetectionEvent = {
+                id: Date.now(),
+                timestamp: Date.now(),
+                timeString: formatTime(Date.now())
+              };
               
+              setDetectionHistory(prev => [newDetection, ...prev]);
+              
+              console.log(`Face connected! Current faces: ${faces.length}`);
+            } else if (!currentlyDetected && wasFaceDetected.current) {
+              // Face just disconnected - play disconnection sound
+              try {
+                const disconnectSound = new Audio('/sounds/desconectado.mp3');
+                disconnectSound.volume = 0.5;
+                disconnectSound.play().catch(e => console.log('Could not play disconnect sound:', e));
+              } catch (error) {
+                console.log('Error creating disconnect sound:', error);
+              }
+              
+              console.log(`Face disconnected! Current faces: ${faces.length}`);
+            }
+            
+            // ALWAYS update the previous detection state
+            wasFaceDetected.current = currentlyDetected;
+            
+            // Only draw visual elements if page is visible
+            if (ctx && canvas && !isPageHiddenRef.current) {
               // Draw facial landmarks and bounding box
               faces.forEach((face) => {
                 const keypoints = face.keypoints;
@@ -282,7 +209,7 @@ export default function Home() {
                   const height = maxY - minY;
                   
                   // Draw the bounding box
-                  ctx.strokeStyle = '#00FF00'; // Green color for the border
+                  ctx.strokeStyle = '#00FF00';
                   ctx.lineWidth = 2;
                   ctx.strokeRect(minX, minY, width, height);
                   
@@ -299,11 +226,11 @@ export default function Home() {
                 // Draw facial landmark points
                 keypoints.forEach((keypoint: Keypoint) => {
                   if (keypoint.name?.includes('lips')) {
-                    ctx.fillStyle = '#FF0000'; // Red for lips
+                    ctx.fillStyle = '#FF0000';
                   } else if (keypoint.name?.includes('eye')) {
-                    ctx.fillStyle = '#00FF00'; // Green for eyes
+                    ctx.fillStyle = '#00FF00';
                   } else {
-                    ctx.fillStyle = '#FFFFFF'; // White for other points
+                    ctx.fillStyle = '#FFFFFF';
                   }
                   
                   ctx.beginPath();
@@ -315,9 +242,9 @@ export default function Home() {
           } catch (error) {
             console.error('Error during face detection:', error);
           } finally {
-            // Continue the detection loop if webcam is still active and page is visible
-            if (isWebcamActive && !isPageHiddenRef.current) {
-              animationRef.current = requestAnimationFrame(detect);
+            // ALWAYS continue the detection loop if webcam is active (regardless of visibility)
+            if (isWebcamActive) {
+              timeoutRef.current = setTimeout(detect, 100); // Changed from requestAnimationFrame
             }
           }
         }
@@ -331,15 +258,73 @@ export default function Home() {
     }
   }, [isWebcamActive, faceCount]);
 
+  // Handle page visibility changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Page became hidden - mark as hidden but DON'T pause detection
+        console.log('Page became hidden, detection continues in background');
+        isPageHiddenRef.current = true;
+      } else {
+        // Page became visible - mark as visible
+        console.log('Page became visible, resuming visual updates');
+        isPageHiddenRef.current = false;
+        
+        // Restart detection if webcam is active and not already running
+        if (isWebcamActive && !timeoutRef.current) {
+          runDetector();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isWebcamActive, runDetector]);
+
+  // Toggle webcam on/off
+  const toggleWebcam = () => {
+    setIsWebcamActive(prev => !prev);
+  };
+
+  // Function to refresh detection by simulating visibility change
+  const refreshDetection = () => {
+    console.log('Simulating page visibility change to refresh detection...');
+    
+    // Simulate page becoming hidden
+    isPageHiddenRef.current = true;
+    
+    // Cancel current timeout (simulating tab switch)
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    
+    // After a brief moment, simulate page becoming visible again
+    setTimeout(() => {
+      isPageHiddenRef.current = false;
+      
+      // Restart detection as if we just returned to the tab
+      if (isWebcamActive && detectorRef.current) {
+        console.log('Restarting detection after simulated visibility change');
+        runDetector();
+      }
+    }, 200); // Small delay to simulate the visibility change
+  };
+
   // Effect to handle webcam state changes
   useEffect(() => {
     if (isWebcamActive) {
       runDetector();
     } else {
-      // Clean up animation frame when turning off webcam
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
+      // Clean up timeout when turning off webcam
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
       // Clear canvas when webcam is off
       const canvas = canvasRef.current;
@@ -366,8 +351,8 @@ export default function Home() {
     
     return () => {
       mounted = false;
-      if (animationRef.current && typeof window !== 'undefined') {
-        cancelAnimationFrame(animationRef.current);
+      if (timeoutRef.current && typeof window !== 'undefined') {
+        clearTimeout(timeoutRef.current);
       }
     };
   }, []);
