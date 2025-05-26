@@ -600,7 +600,7 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
       setTotalPoints(points);
       setUserLevel(Math.floor(points / 300) + 1);
     }
-  }, [sessions, currentSessionTime, achievementDefinitions]);
+  }, [sessions, currentSessionTime, achievements]);
 
   const unlockedCount = achievements.filter(a => a.unlocked).length;
   const totalAchievements = achievementDefinitions.length;

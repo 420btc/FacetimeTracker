@@ -144,10 +144,6 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ sessions }) => 
     return `${minutes}m`;
   };
 
-  const formatHour = (hour: number) => {
-    return hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`;
-  };
-
   const maxWeekValue = Math.max(...analytics.weekData.map(d => d.value));
 
   return (

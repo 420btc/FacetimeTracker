@@ -25,13 +25,10 @@ interface FaceSession {
 }
 
 export default function Home() {
-  const webcamRef = useRef<Webcam>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const detectorRef = useRef<faceLandmarksDetection.FaceLandmarksDetector | null>(null);
-  const wasFaceDetected = useRef(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isPageHiddenRef = useRef(false);
-  
+  const [faceSessions, setFaceSessions] = useState<FaceSession[]>([]);
+  const [currentSessionTime, setCurrentSessionTime] = useState(0);
+  const [isWebcamActive, setIsWebcamActive] = useState(true);
+  const [isFaceDetected, setIsFaceDetected] = useState(false);
   const [detectionHistory, setDetectionHistory] = useState<DetectionEvent[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('detectionHistory');
@@ -40,15 +37,18 @@ export default function Home() {
     return [];
   });
   
-  const [faceSessions, setFaceSessions] = useState<FaceSession[]>([]);
-  const [currentSessionTime, setCurrentSessionTime] = useState(0);
   const [isModelLoaded, setIsModelLoaded] = useState(false);
-  const [isWebcamActive, setIsWebcamActive] = useState(true);
-  const [isFaceDetected, setIsFaceDetected] = useState(false);
   const [detectionCount, setDetectionCount] = useState(0);
   const [isDetecting, setIsDetecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const webcamRef = useRef<Webcam>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const detectorRef = useRef<faceLandmarksDetection.FaceLandmarksDetector | null>(null);
+  const wasFaceDetected = useRef(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isPageHiddenRef = useRef(false);
+  
   // Input resolution configuration
   const inputResolution = { width: 640, height: 480 }; // Tamaño fijo para escritorio
     
