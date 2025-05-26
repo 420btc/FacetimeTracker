@@ -425,7 +425,7 @@ export default function Home() {
       {/* Bottom section - aligned with above sections */}
       <div className="flex flex-col lg:flex-row gap-6 w-full max-w-6xl">
         {/* Left section - same width as webcam */}
-        <div className="w-full lg:w-[640px] flex flex-col h-[180px]">
+        <div className="w-full lg:w-[640px] flex flex-col h-[280px]">
           <div className="p-3 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 mb-3">
             <p className="text-lg font-bold">Caras conectadas: <span className="text-blue-400">{faceCount}</span></p>
             <div className="mt-1 text-center text-gray-300 text-sm">
@@ -433,9 +433,9 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="p-3 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 flex-1">
+          <div className="p-3 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 flex-1 overflow-y-auto">
             <p className="text-base font-semibold mb-2 text-white">📋 Instrucciones</p>
-            <ul className="text-xs text-left space-y-1 text-gray-300">
+            <ul className="text-xs text-left space-y-1 text-gray-300 mb-3">
               <li className="flex items-start">
                 <span className="mr-2">•</span>
                 <span>El contador aumenta cada vez que se detecta una cara</span>
@@ -449,11 +449,50 @@ export default function Home() {
                 <span>Los puntos <span className="text-white">blancos</span> marcan otros puntos faciales</span>
               </li>
             </ul>
+            
+            <div className="border-t border-gray-600 pt-2">
+              <p className="text-sm font-semibold mb-2 text-white">🏥 Guía de Salud Ergonómica</p>
+              <div className="space-y-1 text-xs text-gray-300">
+                <div className="flex items-center gap-2">
+                  <span className="text-green-400">✅ Corta (1-5 min):</span>
+                  <span>Ideal para descansos</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-blue-400">💙 Normal (5-15 min):</span>
+                  <span>Duración saludable</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-cyan-400">💎 Buena (15-30 min):</span>
+                  <span>Concentración óptima</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-yellow-400">⚠️ Larga (30-60 min):</span>
+                  <span>Considera descanso</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-orange-400">🔶 Muy Larga (1-2h):</span>
+                  <span>Descanso recomendado</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-red-400">💀 Extrema (2-3h):</span>
+                  <span>Riesgo para la salud</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-red-600">☠️ Crítica (+3h):</span>
+                  <span>Alto riesgo</span>
+                </div>
+              </div>
+              
+              <div className="mt-2 p-2 bg-blue-900 bg-opacity-30 rounded border border-blue-700">
+                <p className="text-xs text-blue-300 font-medium">💡 Recomendación:</p>
+                <p className="text-xs text-blue-200">Toma descansos cada 20-30 minutos para cuidar tu vista y postura.</p>
+              </div>
+            </div>
           </div>
         </div>
         
-        {/* Right section - same width as session tracker, full height */}
-        <div className="w-full lg:flex-1 h-[204px] p-3 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 overflow-y-auto flex flex-col">
+        {/* Right section - same width as session tracker, matching height */}
+        <div className="w-full lg:flex-1 h-[280px] p-3 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 overflow-y-auto flex flex-col">
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-base font-semibold text-white">📜 Historial de detecciones</h3>
             {detectionHistory.length > 0 && (
