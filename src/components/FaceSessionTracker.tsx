@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 
 const SessionHistory = dynamic(() => import('./SessionHistory'), { ssr: false });
@@ -17,9 +17,11 @@ interface FaceSessionTrackerProps {
   onWebcamToggle: () => void;
   isWebcamActive: boolean;
   onRefreshDetection?: () => void;
+  onSessionsChange?: (sessions: FaceSession[]) => void;
+  onCurrentTimeChange?: (time: number) => void;
 }
 
-export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isWebcamActive, onRefreshDetection }: FaceSessionTrackerProps) {
+export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isWebcamActive, onRefreshDetection, onSessionsChange, onCurrentTimeChange }: FaceSessionTrackerProps) {
   const [currentSession, setCurrentSession] = useState<{
     startTime: number | null;
     elapsedTime: number;
@@ -36,16 +38,21 @@ export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isW
   const lastUpdateRef = useRef<number>(Date.now());
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hiddenTimeRef = useRef<number | null>(null);
+  const onCurrentTimeChangeRef = useRef(onCurrentTimeChange);
   
+  useEffect(() => {
+    onCurrentTimeChangeRef.current = onCurrentTimeChange;
+  }, [onCurrentTimeChange]);
+
   // Clear all sessions
-  const clearSessions = (): void => {
+  const clearSessions = useCallback(() => {
     if (typeof window !== 'undefined') {
       if (confirm('¿Estás seguro de que quieres borrar todo el historial de sesiones?')) {
         localStorage.removeItem('faceDetectionSessions');
         setSessions([]);
       }
     }
-  };
+  }, []);
 
   // Save sessions to localStorage whenever they change
   useEffect(() => {
@@ -53,6 +60,16 @@ export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isW
       localStorage.setItem('faceDetectionSessions', JSON.stringify(sessions));
     }
   }, [sessions]);
+
+  // Notify parent component when sessions change (separate effect to avoid render issues)
+  useEffect(() => {
+    if (onSessionsChange) {
+      // Use setTimeout to defer the callback until after render
+      setTimeout(() => {
+        onSessionsChange(sessions);
+      }, 0);
+    }
+  }, [sessions, onSessionsChange]);
 
   // Handle page visibility changes to prevent timer issues when switching tabs
   useEffect(() => {
@@ -113,53 +130,66 @@ export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isW
       // Update elapsed time every second - ALWAYS run, even when page is hidden
       timerRef.current = setInterval(() => {
         const now = Date.now();
-        const delta = (now - lastUpdateRef.current) / 1000; // in seconds
+        const delta = (now - lastUpdateRef.current) / 1000;
         lastUpdateRef.current = now;
         
-        setCurrentSession(prev => ({
-          ...prev,
-          elapsedTime: prev.elapsedTime + delta
-        }));
+        setCurrentSession(prev => {
+          const newElapsedTime = prev.elapsedTime + delta;
+          if (onCurrentTimeChangeRef.current) {
+            setTimeout(() => {
+              onCurrentTimeChangeRef.current?.(newElapsedTime);
+            }, 0);
+          }
+          return {
+            ...prev,
+            elapsedTime: newElapsedTime
+          };
+        });
       }, 100); // Update frequently for smooth display
       
     } else if (isRunning) {
-      // End current session - only create session card if duration > 0
-      const endTime = Date.now();
-      const finalDelta = (endTime - lastUpdateRef.current) / 1000;
-      
-      console.log('FaceSessionTracker: Ending session');
-      
+      // Stop the session
       setCurrentSession(prev => {
-        const finalDuration = prev.elapsedTime + finalDelta;
-        
-        // Only create session if it lasted more than 0.5 seconds (to avoid micro-sessions)
-        if (finalDuration > 0.5) {
-          const newSession: FaceSession = {
-            id: Date.now(),
-            startTime: prev.startTime || Date.now(),
-            endTime: endTime,
-            duration: finalDuration
-          };
+        if (prev.startTime) {
+          const endTime = Date.now();
+          const finalDuration = (endTime - prev.startTime) / 1000;
           
-          // Add to sessions list
-          setSessions(prevSessions => {
-            const sessionExists = prevSessions.some(session => 
-              session.id === newSession.id || 
-              (session.startTime === newSession.startTime && session.endTime === newSession.endTime)
-            );
+          // Only create session card if duration is greater than 0.5 seconds
+          if (finalDuration > 0.5) {
+            const newSession: FaceSession = {
+              id: Date.now(),
+              startTime: prev.startTime || Date.now(),
+              endTime: endTime,
+              duration: finalDuration
+            };
             
-            if (sessionExists) {
-              return prevSessions;
-            }
-            
-            console.log(`FaceSessionTracker: Creating session card with duration: ${finalDuration.toFixed(1)}s`);
-            return [newSession, ...prevSessions];
-          });
-        } else {
-          console.log(`FaceSessionTracker: Session too short (${finalDuration.toFixed(1)}s), not creating card`);
+            // Add to sessions list
+            setSessions(prevSessions => {
+              const sessionExists = prevSessions.some(session => 
+                session.id === newSession.id || 
+                (session.startTime === newSession.startTime && session.endTime === newSession.endTime)
+              );
+              
+              if (sessionExists) {
+                return prevSessions;
+              }
+              
+              console.log(`FaceSessionTracker: Creating session card with duration: ${finalDuration.toFixed(1)}s`);
+              return [newSession, ...prevSessions];
+            });
+          } else {
+            console.log(`FaceSessionTracker: Session too short (${finalDuration.toFixed(1)}s), not creating card`);
+          }
         }
         
-        return prev;
+        // Reset current time when session ends
+        if (onCurrentTimeChangeRef.current) {
+          setTimeout(() => {
+            onCurrentTimeChangeRef.current?.(0);
+          }, 0);
+        }
+        
+        return { startTime: null, elapsedTime: 0 };
       });
       
       setIsRunning(false);
@@ -183,7 +213,7 @@ export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isW
   }, []);
 
   // Format time in seconds to HH:MM:SS
-  const formatDuration = (seconds: number): string => {
+  const formatDuration = useCallback((seconds: number): string => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = Math.floor(seconds % 60);
@@ -193,9 +223,9 @@ export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isW
       m.toString().padStart(2, '0'),
       s.toString().padStart(2, '0')
     ].join(':');
-  };
+  }, []);
 
-  const formatTimeWithAMPM = (timestamp: number): string => {
+  const formatTimeWithAMPM = useCallback((timestamp: number): string => {
     const date = new Date(timestamp);
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
@@ -204,8 +234,8 @@ export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isW
     const ampm = date.getHours() >= 12 ? 'PM' : 'AM';
     
     return `${hours}:${minutes}:${seconds}.${milliseconds} ${ampm}`;
-  };
-  
+  }, []);
+
   // Alias para mantener compatibilidad
   const formatDateTime = formatTimeWithAMPM;
 

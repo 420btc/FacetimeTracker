@@ -12,6 +12,16 @@ const FaceSessionTracker = dynamic(
   { ssr: false }
 );
 
+const AchievementSystem = dynamic(
+  () => import('@/components/AchievementSystem'),
+  { ssr: false }
+);
+
+const AnalyticsDashboard = dynamic(
+  () => import('@/components/AnalyticsDashboard'),
+  { ssr: false }
+);
+
 // Tipos para los keypoints
 interface Keypoint {
   x: number;
@@ -46,6 +56,8 @@ export default function Home() {
     }
     return [];
   });
+  const [faceSessions, setFaceSessions] = useState<any[]>([]);
+  const [currentSessionTime, setCurrentSessionTime] = useState(0);
   const [isFaceDetected, setIsFaceDetected] = useState(false);
   const [isWebcamActive, setIsWebcamActive] = useState(true);
   
@@ -336,180 +348,190 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="flex flex-col items-center h-screen overflow-hidden p-4 text-white">
-      <div className="flex flex-col items-center mb-6" style={{ paddingTop: '20px' }}>
-        <div className="flex items-center justify-center gap-3">
-          {/* Left icon - hidden on mobile */}
-          <Image 
-            src="/iconox.png" 
-            alt="Logo" 
-            width={96}
-            height={96}
-            className="hidden md:block h-9 w-9 object-contain" 
-            style={{ height: '4.1em', width: 'auto' }}
-          />
-          <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent text-center" style={{ fontSize: 'calc(3rem + 1px)' }}>
-            FaceTime Tracker
-          </h1>
-          {/* Right icon - hidden on mobile */}
-          <Image 
-            src="/iconox.png" 
-            alt="Logo" 
-            width={96}
-            height={96}
-            className="hidden md:block h-9 w-9 object-contain" 
-            style={{ height: '4.1em', width: 'auto' }}
-          />
-        </div>
+    <main className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex flex-col items-center justify-start p-4 overflow-y-auto">
+      {/* Title with visual effect */}
+      <div className="relative mb-6 z-20">
+        <h1 className="text-4xl md:text-6xl font-bold text-white text-center bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+          FaceTime Tracker
+        </h1>
+        <p className="text-gray-300 text-center mt-2 text-sm md:text-base">
+          Detecta y rastrea tu tiempo de concentración en tiempo real
+        </p>
       </div>
-      
-      {/* Webcam and Session Tracker Row */}
-      <div className="flex flex-col lg:flex-row gap-6 w-full max-w-6xl mb-5">
-        {/* Webcam */}
-        <div className="relative w-full lg:w-[640px] h-[480px] bg-black rounded-xl overflow-hidden">
-          {isWebcamActive ? (
-            <Webcam
-              ref={webcamRef}
-              audio={false}
-              videoConstraints={videoConstraints}
-              className="absolute w-full h-full object-cover rounded-xl"
-              onUserMediaError={(e) => {
-                console.error('Webcam error:', e);
-                setIsWebcamActive(false);
+
+      {/* Main content container */}
+      <div className="w-full max-w-6xl space-y-6">
+        {/* Webcam and Session Tracker Row */}
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Webcam */}
+          <div className="relative w-full lg:w-[640px] h-[480px] bg-black rounded-xl overflow-hidden">
+            {isWebcamActive ? (
+              <Webcam
+                ref={webcamRef}
+                audio={false}
+                videoConstraints={videoConstraints}
+                className="absolute w-full h-full object-cover rounded-xl"
+                onUserMediaError={(e) => {
+                  console.error('Webcam error:', e);
+                  setIsWebcamActive(false);
+                }}
+              />
+            ) : (
+              <div className="absolute w-full h-full bg-black bg-opacity-70 rounded-xl flex items-center justify-center">
+                <div className="text-white text-center p-4">
+                  <p className="text-xl font-semibold mb-2">Cámara desactivada</p>
+                  <p className="text-gray-300 text-sm">Haz clic en &quot;Activar Cámara&quot; para comenzar</p>
+                </div>
+              </div>
+            )}
+            <canvas
+              ref={canvasRef}
+              width={640}
+              height={480}
+              className="absolute top-0 left-0 w-full h-full"
+              style={{
+                transformOrigin: 'center',
+                touchAction: 'none',
+                zIndex: 10
               }}
             />
-          ) : (
-            <div className="absolute w-full h-full bg-black bg-opacity-70 rounded-xl flex items-center justify-center">
-              <div className="text-white text-center p-4">
-                <p className="text-xl font-semibold mb-2">Cámara desactivada</p>
-                <p className="text-gray-300 text-sm">Haz clic en &quot;Activar Cámara&quot; para comenzar</p>
-              </div>
-            </div>
-          )}
-          <canvas
-            ref={canvasRef}
-            width={640}
-            height={480}
-            className="absolute top-0 left-0 w-full h-full"
-            style={{
-              transformOrigin: 'center',
-              touchAction: 'none',
-              zIndex: 10
-            }}
-          />
-        </div>
-        
-        {/* Session Tracker - Sidebar */}
-        <div className="w-full lg:flex-1 h-[480px]">
-          <FaceSessionTracker 
-            isFaceDetected={isFaceDetected} 
-            isWebcamActive={isWebcamActive}
-            onWebcamToggle={toggleWebcam}
-            onRefreshDetection={refreshDetection}
-          />
-        </div>
-      </div>
-      
-      {/* Bottom section - aligned with above sections */}
-      <div className="flex flex-col lg:flex-row gap-6 w-full max-w-6xl">
-        {/* Left section - same width as webcam */}
-        <div className="w-full lg:w-[640px] flex flex-col h-[280px]">
-          <div className="p-3 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 mb-3">
-            <p className="text-lg font-bold">Caras conectadas: <span className="text-blue-400">{faceCount}</span></p>
-            <div className="mt-1 text-center text-gray-300 text-sm">
-              {isFaceDetected ? '✅ Cara conectada' : '👀 Esperando conexión...'}
-            </div>
           </div>
           
-          <div className="p-3 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 flex-1 overflow-y-auto">
-            <p className="text-base font-semibold mb-2 text-white">📋 Instrucciones</p>
-            <ul className="text-xs text-left space-y-1 text-gray-300 mb-3">
-              <li className="flex items-start">
-                <span className="mr-2">•</span>
-                <span>El contador aumenta cada vez que se detecta una cara</span>
-              </li>
-              <li className="flex items-start">
-                <span className="mr-2">•</span>
-                <span>Los puntos <span className="text-green-400">verdes</span> muestran los ojos detectados</span>
-              </li>
-              <li className="flex items-start">
-                <span className="mr-2">•</span>
-                <span>Los puntos <span className="text-white">blancos</span> marcan otros puntos faciales</span>
-              </li>
-            </ul>
-            
-            <div className="border-t border-gray-600 pt-2">
-              <p className="text-sm font-semibold mb-2 text-white">🏥 Guía de Salud Ergonómica</p>
-              <div className="space-y-1 text-xs text-gray-300">
-                <div className="flex items-center gap-2">
-                  <span className="text-green-400">✅ Corta (1-5 min):</span>
-                  <span>Ideal para descansos</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-400">💙 Normal (5-15 min):</span>
-                  <span>Duración saludable</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-cyan-400">💎 Buena (15-30 min):</span>
-                  <span>Concentración óptima</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-yellow-400">⚠️ Larga (30-60 min):</span>
-                  <span>Considera descanso</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-orange-400">🔶 Muy Larga (1-2h):</span>
-                  <span>Descanso recomendado</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-red-400">💀 Extrema (2-3h):</span>
-                  <span>Riesgo para la salud</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-red-600">☠️ Crítica (+3h):</span>
-                  <span>Alto riesgo</span>
-                </div>
+          {/* Session Tracker - Sidebar */}
+          <div className="w-full lg:flex-1 h-[480px]">
+            <FaceSessionTracker 
+              isFaceDetected={isFaceDetected} 
+              isWebcamActive={isWebcamActive}
+              onWebcamToggle={toggleWebcam}
+              onRefreshDetection={refreshDetection}
+              onSessionsChange={setFaceSessions}
+              onCurrentTimeChange={setCurrentSessionTime}
+            />
+          </div>
+        </div>
+
+        {/* Instructions and Achievements Row */}
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Instructions - Left side */}
+          <div className="w-full lg:w-[640px] h-[280px] p-4 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 overflow-y-auto">
+            <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+              <span className="text-2xl">📋</span>
+              Instrucciones de uso
+            </h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-start gap-3">
+                <span className="text-green-400 font-bold">1.</span>
+                <span className="text-gray-200">Activa la cámara y posiciónate frente a ella</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-blue-400 font-bold">2.</span>
+                <span className="text-gray-200">El sistema detectará automáticamente tu rostro</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-purple-400 font-bold">3.</span>
+                <span className="text-gray-200">El contador iniciará cuando detecte tu cara</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-yellow-400 font-bold">4.</span>
+                <span className="text-gray-200">Se pausará automáticamente si no detecta tu rostro</span>
               </div>
               
-              <div className="mt-2 p-2 bg-blue-900 bg-opacity-30 rounded border border-blue-700">
-                <p className="text-xs text-blue-300 font-medium">💡 Recomendación:</p>
-                <p className="text-xs text-blue-200">Toma descansos cada 20-30 minutos para cuidar tu vista y postura.</p>
+              <div className="mt-4 p-3 bg-gray-800 rounded-lg border border-gray-600">
+                <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
+                  <span>🎯</span>
+                  Códigos de color por duración:
+                </h4>
+                <div className="space-y-1 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-400">💚 Corta (0-5 min):</span>
+                    <span>Sesión inicial</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-blue-400">💙 Normal (5-15 min):</span>
+                    <span>Duración saludable</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-cyan-400">💎 Buena (15-30 min):</span>
+                    <span>Concentración óptima</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-yellow-400">⚠️ Larga (30-60 min):</span>
+                    <span>Considera descanso</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-orange-400">🔶 Muy Larga (1-2h):</span>
+                    <span>Descanso recomendado</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-400">💀 Extrema (2-3h):</span>
+                    <span>Riesgo para la salud</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-600">☠️ Crítica (+3h):</span>
+                    <span>Alto riesgo</span>
+                  </div>
+                </div>
+                
+                <div className="mt-2 p-2 bg-blue-900 bg-opacity-30 rounded border border-blue-700">
+                  <p className="text-xs text-blue-300 font-medium">💡 Recomendación:</p>
+                  <p className="text-xs text-blue-200">Toma descansos cada 20-30 minutos para cuidar tu vista y postura.</p>
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Achievements - Right side */}
+          <div className="w-full lg:flex-1">
+            <AchievementSystem 
+              sessions={faceSessions}
+              currentSessionTime={currentSessionTime}
+              isFaceDetected={faceCount > 0}
+            />
+          </div>
         </div>
-        
-        {/* Right section - same width as session tracker, matching height */}
-        <div className="w-full lg:flex-1 h-[280px] p-3 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 overflow-y-auto flex flex-col">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-base font-semibold text-white">📜 Historial de detecciones</h3>
-            {detectionHistory.length > 0 && (
-              <button
-                onClick={clearDetectionHistory}
-                className="text-xs bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-lg transition-colors"
-                title="Borrar historial de detecciones"
-              >
-                Borrar todo
-              </button>
+
+        {/* History and Analytics Row */}
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Detection History - Left side */}
+          <div className="w-full lg:w-[640px] h-[280px] p-3 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 overflow-y-auto flex flex-col">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-base font-semibold text-white">📜 Historial de detecciones</h3>
+              {detectionHistory.length > 0 && (
+                <button
+                  onClick={clearDetectionHistory}
+                  className="text-xs bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-lg transition-colors"
+                  title="Borrar historial de detecciones"
+                >
+                  Borrar todo
+                </button>
+              )}
+            </div>
+            {detectionHistory.length === 0 ? (
+              <p className="text-gray-400 text-center my-2 text-sm">No hay detecciones registradas</p>
+            ) : (
+              <ul className="divide-y divide-gray-700 flex-1 overflow-y-auto">
+                {detectionHistory.map((event, index) => (
+                  <li key={event.id} className="py-1 flex justify-between items-center hover:bg-gray-800 px-1 rounded transition-colors">
+                    <span className="text-gray-200 text-xs">
+                      <span className="font-medium">Detección #{detectionHistory.length - index}</span>
+                      <span className="text-xs text-gray-400 ml-1">ID: {event.id}</span>
+                    </span>
+                    <span className="text-xs bg-gray-800 text-gray-300 px-1 py-0.5 rounded border border-gray-600">
+                      {event.timeString}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
-          {detectionHistory.length === 0 ? (
-            <p className="text-gray-400 text-center my-2 text-sm">No hay detecciones registradas</p>
-          ) : (
-            <ul className="divide-y divide-gray-700 flex-1 overflow-y-auto">
-              {detectionHistory.map((event, index) => (
-                <li key={event.id} className="py-1 flex justify-between items-center hover:bg-gray-800 px-1 rounded transition-colors">
-                  <span className="text-gray-200 text-xs">
-                    <span className="font-medium">Detección #{detectionHistory.length - index}</span>
-                    <span className="text-xs text-gray-400 ml-1">ID: {event.id}</span>
-                  </span>
-                  <span className="text-xs bg-gray-800 text-gray-300 px-1 py-0.5 rounded border border-gray-600">
-                    {event.timeString}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+
+          {/* Analytics Dashboard - Right side */}
+          <div className="w-full lg:flex-1">
+            <AnalyticsDashboard 
+              sessions={faceSessions}
+              currentSessionTime={currentSessionTime}
+            />
+          </div>
         </div>
       </div>
     </main>
