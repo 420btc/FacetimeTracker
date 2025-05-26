@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import * as tf from '@tensorflow/tfjs';
-import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detection';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
-import dynamic from 'next/dynamic';
+import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detection';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 
 // Lazy load the FaceSessionTracker to avoid SSR issues with WebGL
 const FaceSessionTracker = dynamic(
@@ -256,7 +255,7 @@ export default function Home() {
     } catch (error) {
       console.error('Error loading face detection model:', error);
     }
-  }, [isWebcamActive, faceCount]);
+  }, [isWebcamActive]); // Only depend on isWebcamActive to avoid circular dependency
 
   // Handle page visibility changes
   useEffect(() => {
@@ -339,18 +338,7 @@ export default function Home() {
 
   // Clean up on component unmount
   useEffect(() => {
-    let mounted = true;
-    
-    const detectFaces = async () => {
-      if (mounted) {
-        await runDetector();
-      }
-    };
-    
-    detectFaces();
-    
     return () => {
-      mounted = false;
       if (timeoutRef.current && typeof window !== 'undefined') {
         clearTimeout(timeoutRef.current);
       }
