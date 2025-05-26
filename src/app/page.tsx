@@ -1,43 +1,27 @@
-"use client";
+'use client';
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import Webcam from 'react-webcam';
 import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detection';
-import Image from 'next/image';
+import '@tensorflow/tfjs-backend-webgl';
 import dynamic from 'next/dynamic';
 
-// Lazy load the FaceSessionTracker to avoid SSR issues with WebGL
-const FaceSessionTracker = dynamic(
-  () => import('@/components/FaceSessionTracker'),
-  { ssr: false }
-);
-
-const AchievementSystem = dynamic(
-  () => import('@/components/AchievementSystem'),
-  { ssr: false }
-);
-
-const AnalyticsDashboard = dynamic(
-  () => import('@/components/AnalyticsDashboard'),
-  { ssr: false }
-);
-
-// Tipos para los keypoints
-interface Keypoint {
-  x: number;
-  y: number;
-  name?: string;
-}
+const FaceSessionTracker = dynamic(() => import('../components/FaceSessionTracker'), { ssr: false });
+const AchievementSystem = dynamic(() => import('../components/AchievementSystem'), { ssr: false });
+const AnalyticsDashboard = dynamic(() => import('../components/AnalyticsDashboard'), { ssr: false });
 
 interface DetectionEvent {
   id: number;
   timestamp: number;
-  timeString: string;
+  type: 'connect' | 'disconnect';
+  duration?: number;
 }
 
-function formatTime(timestamp: number): string {
-  const date = new Date(timestamp);
-  return date.toLocaleTimeString();
+interface FaceSession {
+  id: number;
+  startTime: number;
+  endTime: number | null;
+  duration: number;
 }
 
 export default function Home() {
@@ -48,32 +32,22 @@ export default function Home() {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isPageHiddenRef = useRef(false);
   
-  const [faceCount, setFaceCount] = useState(0);
   const [detectionHistory, setDetectionHistory] = useState<DetectionEvent[]>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('faceDetectionHistory');
+      const saved = localStorage.getItem('detectionHistory');
       return saved ? JSON.parse(saved) : [];
     }
     return [];
   });
-  const [faceSessions, setFaceSessions] = useState<any[]>([]);
+  
+  const [faceSessions, setFaceSessions] = useState<FaceSession[]>([]);
   const [currentSessionTime, setCurrentSessionTime] = useState(0);
-  const [isFaceDetected, setIsFaceDetected] = useState(false);
+  const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [isWebcamActive, setIsWebcamActive] = useState(true);
-  
-  // Guardar historial en localStorage cuando cambie
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('faceDetectionHistory', JSON.stringify(detectionHistory));
-    }
-  }, [detectionHistory]);
-  
-  // Función para limpiar el historial de detecciones
-  const clearDetectionHistory = () => {
-    if (confirm('¿Estás seguro de que quieres borrar todo el historial de detecciones?')) {
-      setDetectionHistory([]);
-    }
-  };
+  const [isFaceDetected, setIsFaceDetected] = useState(false);
+  const [detectionCount, setDetectionCount] = useState(0);
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Input resolution configuration
   const inputResolution = { width: 640, height: 480 }; // Tamaño fijo para escritorio
@@ -151,7 +125,7 @@ export default function Home() {
             setIsFaceDetected(currentlyDetected);
             
             // ALWAYS update face count (even when hidden)
-            setFaceCount(faces.length);
+            setDetectionCount(faces.length);
             
             // ALWAYS handle face connection/disconnection sounds and events
             if (currentlyDetected && !wasFaceDetected.current) {
@@ -168,7 +142,7 @@ export default function Home() {
               const newDetection: DetectionEvent = {
                 id: Date.now(),
                 timestamp: Date.now(),
-                timeString: formatTime(Date.now())
+                type: 'connect'
               };
               
               setDetectionHistory(prev => [newDetection, ...prev]);
@@ -202,7 +176,7 @@ export default function Home() {
                   let maxX = -Infinity, maxY = -Infinity;
                   
                   // Find keypoint boundaries
-                  keypoints.forEach((keypoint: Keypoint) => {
+                  keypoints.forEach((keypoint) => {
                     minX = Math.min(minX, keypoint.x);
                     minY = Math.min(minY, keypoint.y);
                     maxX = Math.max(maxX, keypoint.x);
@@ -235,7 +209,7 @@ export default function Home() {
                 }
                 
                 // Draw facial landmark points
-                keypoints.forEach((keypoint: Keypoint, index: number) => {
+                keypoints.forEach((keypoint, index) => {
                   // MediaPipe FaceMesh keypoint indices for eyes
                   const leftEyeIndices = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246];
                   const rightEyeIndices = [249, 263, 362, 398, 384, 385, 386, 387, 388, 466, 388, 387, 386, 385, 384, 398];
@@ -497,7 +471,7 @@ export default function Home() {
               <h3 className="text-base font-semibold text-white">📜 Historial de detecciones</h3>
               {detectionHistory.length > 0 && (
                 <button
-                  onClick={clearDetectionHistory}
+                  onClick={() => setDetectionHistory([])}
                   className="text-xs bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-lg transition-colors"
                   title="Borrar historial de detecciones"
                 >
@@ -516,7 +490,7 @@ export default function Home() {
                       <span className="text-xs text-gray-400 ml-1">ID: {event.id}</span>
                     </span>
                     <span className="text-xs bg-gray-800 text-gray-300 px-1 py-0.5 rounded border border-gray-600">
-                      {event.timeString}
+                      {new Date(event.timestamp).toLocaleTimeString()}
                     </span>
                   </li>
                 ))}
@@ -526,10 +500,7 @@ export default function Home() {
 
           {/* Analytics Dashboard - Right side */}
           <div className="w-full lg:flex-1">
-            <AnalyticsDashboard 
-              sessions={faceSessions}
-              currentSessionTime={currentSessionTime}
-            />
+            <AnalyticsDashboard sessions={faceSessions} />
           </div>
         </div>
       </div>

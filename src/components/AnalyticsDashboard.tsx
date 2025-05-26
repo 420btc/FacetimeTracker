@@ -1,54 +1,110 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { FaChartBar, FaChartPie, FaClock, FaCalendarWeek, FaArrowUp, FaEye } from 'react-icons/fa';
+import React, { useState, useMemo } from 'react';
+import { FaChartBar, FaClock, FaCalendarDay, FaEye } from 'react-icons/fa';
 
 interface FaceSession {
   id: number;
   startTime: number;
-  endTime: number;
+  endTime: number | null;
   duration: number;
 }
 
 interface AnalyticsDashboardProps {
   sessions: FaceSession[];
-  currentSessionTime: number;
 }
 
-interface DayData {
-  day: string;
-  totalTime: number;
-  sessionCount: number;
-  avgSession: number;
+interface BarChartProps {
+  data: { label: string; value: number; color: string }[];
+  maxValue: number;
 }
 
-interface HourData {
-  hour: number;
-  totalTime: number;
-  sessionCount: number;
+interface SpiralChartProps {
+  data: { hour: number; value: number; color: string }[];
 }
 
-export default function AnalyticsDashboard({ sessions, currentSessionTime }: AnalyticsDashboardProps) {
-  const [viewMode, setViewMode] = useState<'week' | 'hours'>('week');
+const BarChart: React.FC<BarChartProps> = ({ data, maxValue }) => {
+  return (
+    <div className="space-y-1">
+      {data.map((item, index) => (
+        <div key={index} className="flex items-center gap-2">
+          <span className="text-xs text-gray-400 w-8">{item.label}</span>
+          <div className="flex-1 bg-gray-700 rounded-full h-3 relative overflow-hidden">
+            <div 
+              className={`h-full rounded-full transition-all duration-500 ${item.color}`}
+              style={{ width: `${maxValue > 0 ? (item.value / maxValue) * 100 : 0}%` }}
+            />
+          </div>
+          <span className="text-xs text-white w-12 text-right">
+            {Math.round(item.value / 60)}min
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
-  // Procesar datos para gráficos
+const SpiralChart: React.FC<SpiralChartProps> = ({ data }) => {
+  const maxValue = Math.max(...data.map((d: { value: number }) => d.value));
+
+  return (
+    <div className="relative w-full h-32 flex items-center justify-center">
+      <div className="relative w-24 h-24">
+        {data.map((item, index) => {
+          const angle = (index / 24) * 360;
+          const radius = 40;
+          const intensity = maxValue > 0 ? (item.value / maxValue) : 0;
+          const size = 2 + intensity * 4;
+          
+          const x = Math.cos((angle - 90) * Math.PI / 180) * radius;
+          const y = Math.sin((angle - 90) * Math.PI / 180) * radius;
+          
+          return (
+            <div
+              key={index}
+              className={`absolute rounded-full ${item.color} transition-all duration-300`}
+              style={{
+                width: `${size}px`,
+                height: `${size}px`,
+                left: `calc(50% + ${x}px - ${size/2}px)`,
+                top: `calc(50% + ${y}px - ${size/2}px)`,
+                opacity: 0.3 + intensity * 0.7
+              }}
+              title={`${item.hour}:00 - ${Math.round(item.value / 60)}min`}
+            />
+          );
+        })}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-xs text-gray-400 text-center">
+            <div>24h</div>
+            <div>Patrón</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ sessions }) => {
+  const [viewMode, setViewMode] = useState<'week' | 'daily'>('week');
+
   const analytics = useMemo(() => {
     // Datos por día de la semana
-    const weekData: DayData[] = [
-      { day: 'Lun', totalTime: 0, sessionCount: 0, avgSession: 0 },
-      { day: 'Mar', totalTime: 0, sessionCount: 0, avgSession: 0 },
-      { day: 'Mié', totalTime: 0, sessionCount: 0, avgSession: 0 },
-      { day: 'Jue', totalTime: 0, sessionCount: 0, avgSession: 0 },
-      { day: 'Vie', totalTime: 0, sessionCount: 0, avgSession: 0 },
-      { day: 'Sáb', totalTime: 0, sessionCount: 0, avgSession: 0 },
-      { day: 'Dom', totalTime: 0, sessionCount: 0, avgSession: 0 }
+    const weekData: { label: string; value: number; color: string }[] = [
+      { label: 'Lun', value: 0, color: 'bg-blue-500' },
+      { label: 'Mar', value: 0, color: 'bg-blue-500' },
+      { label: 'Mié', value: 0, color: 'bg-blue-500' },
+      { label: 'Jue', value: 0, color: 'bg-blue-500' },
+      { label: 'Vie', value: 0, color: 'bg-blue-500' },
+      { label: 'Sáb', value: 0, color: 'bg-blue-500' },
+      { label: 'Dom', value: 0, color: 'bg-blue-500' }
     ];
 
     // Datos por hora del día
-    const hourData: HourData[] = Array.from({ length: 24 }, (_, i) => ({
+    const hourData: { hour: number; value: number; color: string }[] = Array.from({ length: 24 }, (_, i) => ({
       hour: i,
-      totalTime: 0,
-      sessionCount: 0
+      value: 0,
+      color: 'bg-purple-500'
     }));
 
     sessions.forEach(session => {
@@ -59,23 +115,15 @@ export default function AnalyticsDashboard({ sessions, currentSessionTime }: Ana
       // Ajustar domingo (0) al final
       const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
       
-      weekData[adjustedDay].totalTime += session.duration;
-      weekData[adjustedDay].sessionCount += 1;
-
-      hourData[hour].totalTime += session.duration;
-      hourData[hour].sessionCount += 1;
-    });
-
-    // Calcular promedios
-    weekData.forEach(day => {
-      day.avgSession = day.sessionCount > 0 ? day.totalTime / day.sessionCount : 0;
+      weekData[adjustedDay].value += session.duration;
+      hourData[hour].value += session.duration;
     });
 
     // Estadísticas generales
-    const totalTime = sessions.reduce((sum, s) => sum + s.duration, 0) + currentSessionTime;
-    const totalSessions = sessions.length + (currentSessionTime > 0 ? 1 : 0);
+    const totalTime = sessions.reduce((sum, s) => sum + s.duration, 0);
+    const totalSessions = sessions.length;
     const avgSessionTime = totalSessions > 0 ? totalTime / totalSessions : 0;
-    const longestSession = Math.max(...sessions.map(s => s.duration), currentSessionTime);
+    const longestSession = Math.max(...sessions.map(s => s.duration));
 
     return {
       weekData,
@@ -85,7 +133,7 @@ export default function AnalyticsDashboard({ sessions, currentSessionTime }: Ana
       avgSessionTime,
       longestSession
     };
-  }, [sessions, currentSessionTime]);
+  }, [sessions]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -100,100 +148,7 @@ export default function AnalyticsDashboard({ sessions, currentSessionTime }: Ana
     return hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`;
   };
 
-  // Componente de gráfico de barras
-  const BarChart = ({ data, maxValue }: { data: DayData[], maxValue: number }) => (
-    <div className="flex items-end justify-between h-32 px-2">
-      {data.map((day, index) => {
-        const height = maxValue > 0 ? (day.totalTime / maxValue) * 100 : 0;
-        return (
-          <div key={day.day} className="flex flex-col items-center flex-1">
-            <div className="flex flex-col items-center justify-end h-24 w-full px-1">
-              <div
-                className="w-full bg-gradient-to-t from-blue-500 to-purple-500 rounded-t transition-all duration-500 min-h-[2px]"
-                style={{ height: `${Math.max(height, 2)}%` }}
-                title={`${day.day}: ${formatTime(day.totalTime)} (${day.sessionCount} sesiones)`}
-              />
-            </div>
-            <span className="text-xs text-gray-400 mt-1">{day.day}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-
-  // Componente de gráfico circular (spiral)
-  const SpiralChart = ({ data }: { data: HourData[] }) => {
-    const maxHourValue = Math.max(...data.map(h => h.totalTime));
-    const centerX = 60;
-    const centerY = 60;
-    const maxRadius = 45;
-
-    return (
-      <div className="flex justify-center">
-        <svg width="120" height="120" className="transform rotate-[-90deg]">
-          {/* Círculos de fondo */}
-          {[0.25, 0.5, 0.75, 1].map(ratio => (
-            <circle
-              key={ratio}
-              cx={centerX}
-              cy={centerY}
-              r={maxRadius * ratio}
-              fill="none"
-              stroke="rgba(75, 85, 99, 0.3)"
-              strokeWidth="1"
-            />
-          ))}
-          
-          {/* Datos en espiral */}
-          {data.map((hour, index) => {
-            const angle = (index / 24) * 2 * Math.PI;
-            const intensity = maxHourValue > 0 ? hour.totalTime / maxHourValue : 0;
-            const radius = 10 + (intensity * 35);
-            
-            const x = centerX + Math.cos(angle) * radius;
-            const y = centerY + Math.sin(angle) * radius;
-            
-            if (hour.totalTime === 0) return null;
-            
-            return (
-              <g key={index}>
-                <circle
-                  cx={x}
-                  cy={y}
-                  r={Math.max(2, intensity * 4)}
-                  fill={`hsl(${240 + intensity * 60}, 70%, 60%)`}
-                  opacity={0.8}
-                >
-                  <title>{`${formatHour(hour.hour)}: ${formatTime(hour.totalTime)}`}</title>
-                </circle>
-                {intensity > 0.3 && (
-                  <line
-                    x1={centerX}
-                    y1={centerY}
-                    x2={x}
-                    y2={y}
-                    stroke={`hsl(${240 + intensity * 60}, 50%, 50%)`}
-                    strokeWidth="1"
-                    opacity="0.4"
-                  />
-                )}
-              </g>
-            );
-          })}
-          
-          {/* Centro */}
-          <circle
-            cx={centerX}
-            cy={centerY}
-            r="3"
-            fill="rgb(147, 197, 253)"
-          />
-        </svg>
-      </div>
-    );
-  };
-
-  const maxWeekValue = Math.max(...analytics.weekData.map(d => d.totalTime));
+  const maxWeekValue = Math.max(...analytics.weekData.map(d => d.value));
 
   return (
     <div className="p-4 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 h-[280px] overflow-y-auto">
@@ -215,9 +170,9 @@ export default function AnalyticsDashboard({ sessions, currentSessionTime }: Ana
             Semana
           </button>
           <button
-            onClick={() => setViewMode('hours')}
+            onClick={() => setViewMode('daily')}
             className={`px-2 py-1 text-xs rounded transition-colors ${
-              viewMode === 'hours' 
+              viewMode === 'daily' 
                 ? 'bg-blue-500 text-white' 
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
@@ -249,7 +204,7 @@ export default function AnalyticsDashboard({ sessions, currentSessionTime }: Ana
         </div>
         <div className="bg-gray-800 p-2 rounded border border-gray-600">
           <div className="flex items-center gap-1 text-xs text-gray-400">
-            <FaArrowUp />
+            <FaCalendarDay />
             Promedio
           </div>
           <div className="text-sm font-semibold text-white">
@@ -258,7 +213,7 @@ export default function AnalyticsDashboard({ sessions, currentSessionTime }: Ana
         </div>
         <div className="bg-gray-800 p-2 rounded border border-gray-600">
           <div className="flex items-center gap-1 text-xs text-gray-400">
-            <FaChartPie />
+            <FaChartBar />
             Récord
           </div>
           <div className="text-sm font-semibold text-white">
@@ -272,7 +227,7 @@ export default function AnalyticsDashboard({ sessions, currentSessionTime }: Ana
         {viewMode === 'week' ? (
           <div>
             <h4 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
-              <FaCalendarWeek className="text-green-400" />
+              <FaCalendarDay className="text-green-400" />
               Actividad Semanal
             </h4>
             <BarChart data={analytics.weekData} maxValue={maxWeekValue} />
@@ -280,7 +235,7 @@ export default function AnalyticsDashboard({ sessions, currentSessionTime }: Ana
         ) : (
           <div>
             <h4 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
-              <FaChartPie className="text-purple-400" />
+              <FaChartBar className="text-purple-400" />
               Patrón Diario (24h)
             </h4>
             <SpiralChart data={analytics.hourData} />
@@ -292,4 +247,6 @@ export default function AnalyticsDashboard({ sessions, currentSessionTime }: Ana
       </div>
     </div>
   );
-}
+};
+
+export default AnalyticsDashboard;

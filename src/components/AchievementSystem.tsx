@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   FaTrophy, 
   FaCrown, 
   FaMedal, 
   FaStar, 
   FaFire, 
-  FaClock, 
   FaCalendarAlt, 
   FaEye, 
   FaMoon, 
@@ -19,8 +18,6 @@ import {
   FaShieldAlt, 
   FaMagic, 
   FaInfinity, 
-  FaThumbsUp, 
-  FaBrain, 
   FaBullseye, 
   FaAward, 
   FaChartLine, 
@@ -33,7 +30,7 @@ import {
 interface FaceSession {
   id: number;
   startTime: number;
-  endTime: number;
+  endTime: number | null;
   duration: number;
 }
 
@@ -58,9 +55,8 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [userLevel, setUserLevel] = useState(1);
   const [totalPoints, setTotalPoints] = useState(0);
-  const [streak, setStreak] = useState(0);
 
-  const achievementDefinitions: Achievement[] = [
+  const achievementDefinitions: Achievement[] = useMemo(() => [
     // Logros básicos
     {
       id: 'first_step',
@@ -288,14 +284,14 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
       color: 'bg-blue-700',
       maxProgress: 20
     }
-  ];
+  ], []);
 
   useEffect(() => {
     const newAchievements = achievementDefinitions.map(def => {
       const existing = achievements.find(a => a.id === def.id);
       let unlocked = existing?.unlocked || false;
-      let progress = 0;
       let unlockedAt = existing?.unlockedAt;
+      let progress = 0;
 
       switch (def.id) {
         case 'first_step':
@@ -364,11 +360,11 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
           break;
 
         case 'night_owl':
-          const hasLateSession = sessions.some(s => {
+          const hasNightSession = sessions.some(s => {
             const hour = new Date(s.startTime).getHours();
             return hour >= 23;
           });
-          progress = hasLateSession ? 1 : 0;
+          progress = hasNightSession ? 1 : 0;
           if (!unlocked && progress >= 1) {
             unlocked = true;
             unlockedAt = Date.now();
@@ -583,8 +579,8 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
       return {
         ...def,
         unlocked,
-        progress,
-        unlockedAt
+        unlockedAt,
+        progress: progress || 0
       };
     });
 
@@ -596,22 +592,15 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
              oldAch.progress !== newAch.progress;
     });
 
-    if (hasChanges || achievements.length === 0) {
+    if (hasChanges || achievements.length !== newAchievements.length) {
       setAchievements(newAchievements);
-
+      
       // Calcular puntos y nivel
-      const points = newAchievements.reduce((total, achievement) => {
-        if (achievement.unlocked) {
-          return total + 100; // 100 puntos por logro
-        }
-        return total;
-      }, 0);
-
+      const points = newAchievements.filter(a => a.unlocked).length * 100;
       setTotalPoints(points);
-      setUserLevel(Math.floor(points / 300) + 1); // Nivel cada 300 puntos
+      setUserLevel(Math.floor(points / 300) + 1);
     }
-
-  }, [sessions, currentSessionTime]); // Remover achievements de las dependencias
+  }, [sessions, currentSessionTime, achievementDefinitions]);
 
   const unlockedCount = achievements.filter(a => a.unlocked).length;
   const totalAchievements = achievementDefinitions.length;
