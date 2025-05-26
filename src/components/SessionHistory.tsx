@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { FaceSession } from './FaceSessionTracker';
+import { FaPlay, FaStop } from 'react-icons/fa';
 
 interface SessionHistoryProps {
   sessions: FaceSession[];
@@ -71,30 +72,26 @@ export default function SessionHistory({ sessions, onClearSessions }: SessionHis
         <div className="flex-1 overflow-y-auto pr-1 space-y-2" style={{ maxHeight: 'calc(100% - 40px)' }}>
           {sortedSessions.map((session) => (
             <div key={session.id} className="text-xs p-3 bg-gray-800 rounded-lg space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-xs">Duración:</span>
-                <span className="text-white font-medium">{formatDuration(session.duration)}</span>
-              </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center">
-                  <span className="text-green-400 text-xs">
-                    ▲
-                  </span>
-                  <span className="text-gray-400 ml-1 text-xs">Inicio:</span>
+                  <FaPlay className="text-green-400 text-xs mr-1" />
+                  <span className="text-gray-400 text-xs">Inicio:</span>
                 </div>
-                <span className="text-white text-xs">{formatTimeWithAMPM(session.startTime)}</span>
+                <span className="text-gray-300 text-xs">{formatTimeWithAMPM(session.startTime)}</span>
               </div>
               {session.endTime && (
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center mb-3">
                   <div className="flex items-center">
-                    <span className="text-red-400 text-xs">
-                      ▼
-                    </span>
-                    <span className="text-gray-400 ml-1 text-xs">Fin:</span>
+                    <FaStop className="text-red-400 text-xs mr-1" />
+                    <span className="text-gray-400 text-xs">Fin:</span>
                   </div>
-                  <span className="text-white text-xs">{formatTimeWithAMPM(session.endTime)}</span>
+                  <span className="text-gray-300 text-xs">{formatTimeWithAMPM(session.endTime)}</span>
                 </div>
               )}
+              <div className="text-center py-2 px-3 bg-gray-700 bg-opacity-50 rounded-lg">
+                <div className="text-xs text-gray-400 mb-1">Duración</div>
+                <div className="text-2xl font-bold text-white">{formatDuration(session.duration)}</div>
+              </div>
             </div>
           ))}
         </div>

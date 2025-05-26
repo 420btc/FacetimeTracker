@@ -144,10 +144,10 @@ export default function FaceSessionTracker({ isFaceDetected }: FaceSessionTracke
             <p className="text-sm text-gray-400">Tiempo actual:</p>
             {isRunning ? (
               <div className="space-y-1">
-                <p className="text-2xl font-mono text-green-400 font-medium">
+                <p className="text-5xl md:text-6xl font-mono text-green-400 font-bold tracking-tighter">
                   {formatDuration(currentSession.elapsedTime)}
                 </p>
-                <p className="text-xs text-gray-400">
+                <p className="text-sm text-gray-400 mt-2">
                   Inició: {formatDateTime(currentSession.startTime || Date.now())}
                 </p>
               </div>
