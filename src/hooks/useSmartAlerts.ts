@@ -32,7 +32,7 @@ export const useSmartAlerts = ({
   const finalConfig = useMemo<AlertConfig>(() => ({
     ...defaultConfig,
     ...config
-  }), [config]);
+  }), [config, defaultConfig]);
 
   const lastAlertTimeRef = useRef<number>(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);

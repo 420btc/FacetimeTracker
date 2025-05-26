@@ -58,7 +58,12 @@ const DualSpiralChart: React.FC<SpiralChartProps> = ({ data }) => {
     return aHour - bHour;
   });
 
-  const renderSpiral = (spiralData: any[], centerX: number, centerY: number, radius: number, label: string, isDay: boolean) => {
+  interface SpiralDataItem {
+    hour: number;
+    value: number;
+  }
+
+  const renderSpiral = (spiralData: SpiralDataItem[], centerX: number, centerY: number, radius: number, label: string, isDay: boolean) => {
     return (
       <div className="relative">
         {spiralData.map((item, index) => {
