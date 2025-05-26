@@ -45,6 +45,7 @@ export default function Home() {
     return [];
   });
   const [isFaceDetected, setIsFaceDetected] = useState(false);
+  const [isWebcamActive, setIsWebcamActive] = useState(true);
   
   // Guardar historial en localStorage cuando cambie
   useEffect(() => {
@@ -71,8 +72,37 @@ export default function Home() {
     aspectRatio: 1.333, // 4:3 para mantener relación de aspecto
   };
 
+  // Toggle webcam on/off
+  const toggleWebcam = () => {
+    setIsWebcamActive(prev => !prev);
+  };
+
+  // Effect to handle webcam state changes
+  useEffect(() => {
+    if (isWebcamActive) {
+      runDetector();
+    } else {
+      // Clean up animation frame when turning off webcam
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+      // Clear canvas when webcam is off
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (ctx && canvas) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      // Reset face detection state
+      setIsFaceDetected(false);
+    }
+    // We only want to run this effect when isWebcamActive changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isWebcamActive]);
+
   // Load and configure the model
   const runDetector = async () => {
+    if (!isWebcamActive) return; // Don't run detector if webcam is off
     try {
       // Set WebGL backend with fallback to CPU if needed
       try {
@@ -250,25 +280,31 @@ export default function Home() {
       <div className="flex flex-col lg:flex-row gap-8 w-full max-w-6xl">
         {/* Webcam */}
         <div className="relative w-full lg:w-[640px] h-[480px] bg-black rounded-xl overflow-hidden">
-          <Webcam
-            ref={webcamRef}
-            audio={false}
-            videoConstraints={videoConstraints}
-            className="w-full h-full object-cover"
-            width={640}
-            height={480}
-            style={{
-              transform: isMobile ? 'scaleX(-1)' : 'none',
-              objectFit: 'cover'
-            }}
-          />
+          {isWebcamActive ? (
+            <Webcam
+              ref={webcamRef}
+              audio={false}
+              videoConstraints={videoConstraints}
+              className="absolute w-full h-full object-cover rounded-xl"
+              onUserMediaError={(e) => {
+                console.error('Webcam error:', e);
+                setIsWebcamActive(false);
+              }}
+            />
+          ) : (
+            <div className="absolute w-full h-full bg-black bg-opacity-70 rounded-xl flex items-center justify-center">
+              <div className="text-white text-center p-4">
+                <p className="text-xl font-semibold mb-2">Cámara desactivada</p>
+                <p className="text-gray-300 text-sm">Haz clic en "Activar Cámara" para comenzar</p>
+              </div>
+            </div>
+          )}
           <canvas
             ref={canvasRef}
             width={640}
             height={480}
             className="absolute top-0 left-0 w-full h-full"
             style={{
-              transform: isMobile ? 'scaleX(-1)' : 'none',
               transformOrigin: 'center',
               touchAction: 'none',
               zIndex: 10
@@ -278,7 +314,11 @@ export default function Home() {
         
         {/* Session Tracker - Sidebar */}
         <div className="w-full lg:flex-1 h-[480px]">
-          <FaceSessionTracker isFaceDetected={isFaceDetected} />
+          <FaceSessionTracker 
+        isFaceDetected={isFaceDetected} 
+        isWebcamActive={isWebcamActive}
+        onWebcamToggle={toggleWebcam}
+      />
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-6xl mx-auto mt-6">

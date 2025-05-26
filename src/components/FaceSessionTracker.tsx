@@ -14,9 +14,11 @@ export interface FaceSession {
 
 interface FaceSessionTrackerProps {
   isFaceDetected: boolean;
+  onWebcamToggle: () => void;
+  isWebcamActive: boolean;
 }
 
-export default function FaceSessionTracker({ isFaceDetected }: FaceSessionTrackerProps) {
+export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isWebcamActive }: FaceSessionTrackerProps) {
   const [currentSession, setCurrentSession] = useState<{
     startTime: number | null;
     elapsedTime: number;
@@ -137,7 +139,21 @@ export default function FaceSessionTracker({ isFaceDetected }: FaceSessionTracke
   return (
     <div className="h-full flex flex-col">
       <div className="h-full flex flex-col p-4 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 overflow-hidden">
-        <h3 className="text-2xl font-semibold text-white mb-4"> 🟢 Sesión Activa</h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-2xl font-semibold text-white">
+            {isWebcamActive ? '🟢' : '🔴'} Sesión {isWebcamActive ? 'Activa' : 'Inactiva'}
+          </h3>
+          <button
+            onClick={onWebcamToggle}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              isWebcamActive 
+                ? 'bg-red-600 hover:bg-red-700 text-white' 
+                : 'bg-green-600 hover:bg-green-700 text-white'
+            }`}
+          >
+            {isWebcamActive ? 'Desactivar Cámara' : 'Activar Cámara'}
+          </button>
+        </div>
         
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <div className="space-y-1">
