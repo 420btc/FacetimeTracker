@@ -51,9 +51,10 @@ export default function Home() {
     isSessionActive: isFaceDetected && isWebcamActive,
     config: {
       enabled: true,
-      lowDurationThreshold: 300, // 5 minutos
-      highDurationThreshold: 1800, // 30 minutos
-      alertInterval: 600 // 10 minutos
+      minDuration: 3600, // 1 hora en segundos
+      alertInterval: 1800, // 30 minutos entre alertas
+      notificationTitle: '¡Hora de tomar un descanso!',
+      notificationMessage: 'Has estado concentrado por más de 1 hora. Considera tomar un descanso.'
     }
   });
   
@@ -480,18 +481,11 @@ export default function Home() {
                   </p>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => triggerManualAlert('low')}
-                      className="text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded transition-colors"
-                      title="Probar alerta de motivación (sesiones cortas)"
+                      onClick={() => triggerManualAlert()}
+                      className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded transition-colors"
+                      title="Probar alarma de descanso"
                     >
-                      🔔 Prueba Motivación
-                    </button>
-                    <button
-                      onClick={() => triggerManualAlert('high')}
-                      className="text-xs bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded transition-colors"
-                      title="Probar alerta de descanso (sesiones largas)"
-                    >
-                      🚨 Prueba Descanso
+                      🔔 Probar Alarma
                     </button>
                   </div>
                 </div>
