@@ -485,7 +485,6 @@ export default function Home() {
             <AchievementSystem 
               sessions={faceSessions}
               currentSessionTime={currentSessionTime}
-              isFaceDetected={faceCount > 0}
             />
           </div>
         </div>
