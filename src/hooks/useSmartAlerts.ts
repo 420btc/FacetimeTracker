@@ -43,7 +43,7 @@ export const useSmartAlerts = ({
 
     // Crear AudioContext para mejor control del audio
     try {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioContextRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     } catch (error) {
       console.warn('AudioContext no disponible:', error);
     }
