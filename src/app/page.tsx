@@ -5,6 +5,7 @@ import Webcam from 'react-webcam';
 import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detection';
 import '@tensorflow/tfjs-backend-webgl';
 import dynamic from 'next/dynamic';
+import { useSmartAlerts } from '../hooks/useSmartAlerts';
 
 const FaceSessionTracker = dynamic(() => import('../components/FaceSessionTracker'), { ssr: false });
 const AchievementSystem = dynamic(() => import('../components/AchievementSystem'), { ssr: false });
@@ -43,6 +44,18 @@ export default function Home() {
   const wasFaceDetected = useRef(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isPageHiddenRef = useRef(false);
+  
+  // Sistema de alertas inteligentes
+  const { triggerManualAlert, isAlertsEnabled, notificationPermission } = useSmartAlerts({
+    currentSessionTime,
+    isSessionActive: isFaceDetected && isWebcamActive,
+    config: {
+      enabled: true,
+      lowDurationThreshold: 300, // 5 minutos
+      highDurationThreshold: 1800, // 30 minutos
+      alertInterval: 600 // 10 minutos
+    }
+  });
   
   // Input resolution configuration
   const inputResolution = { width: 640, height: 480 }; // Tamaño fijo para escritorio
@@ -441,6 +454,46 @@ export default function Home() {
                 <div className="mt-2 p-2 bg-blue-900 bg-opacity-30 rounded border border-blue-700">
                   <p className="text-xs text-blue-300 font-medium">💡 Recomendación:</p>
                   <p className="text-xs text-blue-200">Toma descansos cada 20-30 minutos para cuidar tu vista y postura.</p>
+                </div>
+                
+                {/* Sistema de Alertas Inteligentes */}
+                <div className="mt-3 p-3 bg-purple-900 bg-opacity-30 rounded border border-purple-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-purple-300 font-medium">🔔 Alertas Inteligentes</p>
+                    <div className="flex gap-2">
+                      <span className={`text-xs px-2 py-1 rounded ${isAlertsEnabled ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-300'}`}>
+                        {isAlertsEnabled ? 'Activo' : 'Inactivo'}
+                      </span>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        notificationPermission === 'granted' ? 'bg-green-600 text-white' : 
+                        notificationPermission === 'denied' ? 'bg-red-600 text-white' : 
+                        'bg-yellow-600 text-white'
+                      }`}>
+                        {notificationPermission === 'granted' ? '🔔 Permitido' : 
+                         notificationPermission === 'denied' ? '🔕 Denegado' : 
+                         '⏳ Pendiente'}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-purple-200 mb-2">
+                    Sistema automático de notificaciones por tiempo de sesión.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => triggerManualAlert('low')}
+                      className="text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded transition-colors"
+                      title="Probar alerta de motivación (sesiones cortas)"
+                    >
+                      🔔 Prueba Motivación
+                    </button>
+                    <button
+                      onClick={() => triggerManualAlert('high')}
+                      className="text-xs bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded transition-colors"
+                      title="Probar alerta de descanso (sesiones largas)"
+                    >
+                      🚨 Prueba Descanso
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
