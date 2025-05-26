@@ -273,10 +273,9 @@ export default function Home() {
         console.log('Page became visible, resuming visual updates');
         isPageHiddenRef.current = false;
         
-        // Restart detection if webcam is active and not already running
-        if (isWebcamActive && !timeoutRef.current) {
-          runDetector();
-        }
+        // DON'T restart detection - just resume visual updates
+        // The detection loop should already be running in the background
+        console.log('Page visible again, visual updates resumed');
       }
     };
 
@@ -285,7 +284,7 @@ export default function Home() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isWebcamActive, runDetector]);
+  }, []); // Remove dependencies to avoid restarting detection
 
   // Toggle webcam on/off
   const toggleWebcam = () => {
@@ -294,27 +293,16 @@ export default function Home() {
 
   // Function to refresh detection by simulating visibility change
   const refreshDetection = () => {
-    console.log('Simulating page visibility change to refresh detection...');
+    console.log('Refreshing visual updates and detection state...');
     
-    // Simulate page becoming hidden
+    // Simply toggle the page visibility to force a visual refresh
     isPageHiddenRef.current = true;
     
-    // Cancel current timeout (simulating tab switch)
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-    
-    // After a brief moment, simulate page becoming visible again
+    // After a brief moment, resume visual updates
     setTimeout(() => {
       isPageHiddenRef.current = false;
-      
-      // Restart detection as if we just returned to the tab
-      if (isWebcamActive && detectorRef.current) {
-        console.log('Restarting detection after simulated visibility change');
-        runDetector();
-      }
-    }, 200); // Small delay to simulate the visibility change
+      console.log('Visual updates refreshed');
+    }, 100); // Shorter delay for better UX
   };
 
   // Effect to handle webcam state changes
@@ -349,7 +337,7 @@ export default function Home() {
 
   return (
     <main className="flex flex-col items-center h-screen overflow-hidden p-4 text-white">
-      <div className="flex flex-col items-center mb-4">
+      <div className="flex flex-col items-center mb-6" style={{ paddingTop: '20px' }}>
         <div className="flex items-center justify-center gap-3">
           {/* Left icon - hidden on mobile */}
           <Image 
@@ -358,9 +346,9 @@ export default function Home() {
             width={96}
             height={96}
             className="hidden md:block h-9 w-9 object-contain" 
-            style={{ height: '4em', width: 'auto' }}
+            style={{ height: '4.1em', width: 'auto' }}
           />
-          <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent text-center">
+          <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent text-center" style={{ fontSize: 'calc(3rem + 1px)' }}>
             FaceTime Tracker
           </h1>
           {/* Right icon - hidden on mobile */}
@@ -370,7 +358,7 @@ export default function Home() {
             width={96}
             height={96}
             className="hidden md:block h-9 w-9 object-contain" 
-            style={{ height: '4em', width: 'auto' }}
+            style={{ height: '4.1em', width: 'auto' }}
           />
         </div>
       </div>

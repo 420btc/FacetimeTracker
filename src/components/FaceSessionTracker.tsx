@@ -62,13 +62,21 @@ export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isW
       if (document.hidden) {
         // Page is now hidden - store the time when it was hidden
         hiddenTimeRef.current = Date.now();
+        console.log('FaceSessionTracker: Page hidden, storing timestamp');
       } else {
         // Page is now visible - adjust for time lost while hidden
         if (hiddenTimeRef.current && isRunning) {
           const timeHidden = Date.now() - hiddenTimeRef.current;
-          // Update lastUpdate to account for the time the page was hidden
+          console.log(`FaceSessionTracker: Page visible again, was hidden for ${timeHidden}ms`);
+          
+          // Add the hidden time to the current session
+          setCurrentSession(prev => ({
+            ...prev,
+            elapsedTime: prev.elapsedTime + (timeHidden / 1000) // Convert to seconds
+          }));
+          
+          // Update lastUpdate to current time
           lastUpdateRef.current = Date.now();
-          console.log(`Page was hidden for ${timeHidden}ms, adjusting timer`);
         }
         hiddenTimeRef.current = null;
       }
@@ -99,13 +107,11 @@ export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isW
         });
         setIsRunning(true);
         lastUpdateRef.current = now;
+        console.log('FaceSessionTracker: Starting new session');
       }
 
-      // Update elapsed time every second with more accurate timing
+      // Update elapsed time every second - ALWAYS run, even when page is hidden
       timerRef.current = setInterval(() => {
-        // Skip update if page is hidden
-        if (document.hidden) return;
-        
         const now = Date.now();
         const delta = (now - lastUpdateRef.current) / 1000; // in seconds
         lastUpdateRef.current = now;
@@ -114,18 +120,20 @@ export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isW
           ...prev,
           elapsedTime: prev.elapsedTime + delta
         }));
-      }, 100); // Update more frequently for smoother display
+      }, 100); // Update frequently for smooth display
       
     } else if (isRunning) {
       // End current session
       const endTime = Date.now();
       const finalDelta = (endTime - lastUpdateRef.current) / 1000;
       
+      console.log('FaceSessionTracker: Ending session');
+      
       setCurrentSession(prev => {
         const newSession: FaceSession = {
-          id: endTime,
-          startTime: prev.startTime || endTime,
-          endTime,
+          id: Date.now(),
+          startTime: prev.startTime || Date.now(),
+          endTime: endTime,
           duration: prev.elapsedTime + finalDelta
         };
         
