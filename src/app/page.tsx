@@ -205,13 +205,25 @@ export default function Home() {
                   ctx.strokeRect(minX, minY, width, height);
                   
                   // Add label with background for better readability
-                  const label = 'Cara detectada';
-                  const textWidth = ctx.measureText(label).width;
-                  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-                  ctx.fillRect(minX - 2, minY - 17, textWidth + 4, 16);
-                  ctx.fillStyle = '#00FF00';
+                  const label = '🤖 Cara detectada';
                   ctx.font = '12px Arial';
-                  ctx.fillText(label, minX, minY > 10 ? minY - 5 : 10);
+                  const textWidth = ctx.measureText(label).width;
+                  const padding = 4; // Padding adicional para el fondo
+                  const textX = minX;
+                  const textY = minY > 10 ? minY - 5 : 25;
+                  
+                  // Dibujar fondo
+                  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                  ctx.fillRect(
+                    textX - padding / 2, 
+                    textY - 12, 
+                    textWidth + padding, 
+                    16
+                  );
+                  
+                  // Dibujar texto
+                  ctx.fillStyle = '#00FF00';
+                  ctx.fillText(label, textX, textY);
                 }
                 
                 // Draw facial landmark points
