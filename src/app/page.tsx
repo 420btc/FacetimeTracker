@@ -218,7 +218,7 @@ export default function Home() {
                 keypoints.forEach((keypoint, index) => {
                   // MediaPipe FaceMesh keypoint indices for eyes
                   const leftEyeIndices = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246];
-                  const rightEyeIndices = [249, 263, 362, 398, 384, 385, 386, 387, 388, 466, 388, 387, 386, 385, 384, 398];
+                  const rightEyeIndices = [362, 398, 384, 385, 386, 387, 388, 466, 263, 249, 390, 373, 374, 380, 381, 382];
                   
                   if (leftEyeIndices.includes(index) || rightEyeIndices.includes(index)) {
                     ctx.fillStyle = '#00FF00'; // Green for eyes
