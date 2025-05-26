@@ -123,33 +123,41 @@ export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isW
       }, 100); // Update frequently for smooth display
       
     } else if (isRunning) {
-      // End current session
+      // End current session - only create session card if duration > 0
       const endTime = Date.now();
       const finalDelta = (endTime - lastUpdateRef.current) / 1000;
       
       console.log('FaceSessionTracker: Ending session');
       
       setCurrentSession(prev => {
-        const newSession: FaceSession = {
-          id: Date.now(),
-          startTime: prev.startTime || Date.now(),
-          endTime: endTime,
-          duration: prev.elapsedTime + finalDelta
-        };
+        const finalDuration = prev.elapsedTime + finalDelta;
         
-        // Prevent duplicate sessions
-        setSessions(prevSessions => {
-          const sessionExists = prevSessions.some(session => 
-            session.id === newSession.id || 
-            (session.startTime === newSession.startTime && session.endTime === newSession.endTime)
-          );
+        // Only create session if it lasted more than 0.5 seconds (to avoid micro-sessions)
+        if (finalDuration > 0.5) {
+          const newSession: FaceSession = {
+            id: Date.now(),
+            startTime: prev.startTime || Date.now(),
+            endTime: endTime,
+            duration: finalDuration
+          };
           
-          if (sessionExists) {
-            return prevSessions;
-          }
-          
-          return [newSession, ...prevSessions];
-        });
+          // Add to sessions list
+          setSessions(prevSessions => {
+            const sessionExists = prevSessions.some(session => 
+              session.id === newSession.id || 
+              (session.startTime === newSession.startTime && session.endTime === newSession.endTime)
+            );
+            
+            if (sessionExists) {
+              return prevSessions;
+            }
+            
+            console.log(`FaceSessionTracker: Creating session card with duration: ${finalDuration.toFixed(1)}s`);
+            return [newSession, ...prevSessions];
+          });
+        } else {
+          console.log(`FaceSessionTracker: Session too short (${finalDuration.toFixed(1)}s), not creating card`);
+        }
         
         return prev;
       });
