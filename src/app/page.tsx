@@ -348,8 +348,8 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="flex flex-col items-center min-h-screen p-4 text-white">
-      <div className="flex flex-col items-center mb-6">
+    <main className="flex flex-col items-center h-screen overflow-hidden p-4 text-white">
+      <div className="flex flex-col items-center mb-4">
         <div className="flex items-center justify-center gap-3">
           {/* Left icon - hidden on mobile */}
           <Image 
@@ -358,9 +358,9 @@ export default function Home() {
             width={96}
             height={96}
             className="hidden md:block h-9 w-9 object-contain" 
-            style={{ height: '6em', width: 'auto' }}
+            style={{ height: '4em', width: 'auto' }}
           />
-          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent text-center">
+          <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent text-center">
             FaceTime Tracker
           </h1>
           {/* Right icon - hidden on mobile */}
@@ -370,13 +370,13 @@ export default function Home() {
             width={96}
             height={96}
             className="hidden md:block h-9 w-9 object-contain" 
-            style={{ height: '6em', width: 'auto' }}
+            style={{ height: '4em', width: 'auto' }}
           />
         </div>
       </div>
       
       {/* Webcam and Session Tracker Row */}
-      <div className="flex flex-col lg:flex-row gap-8 w-full max-w-6xl">
+      <div className="flex flex-col lg:flex-row gap-6 w-full max-w-6xl mb-5">
         {/* Webcam */}
         <div className="relative w-full lg:w-[640px] h-[480px] bg-black rounded-xl overflow-hidden">
           {isWebcamActive ? (
@@ -421,42 +421,45 @@ export default function Home() {
           />
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-6xl mx-auto mt-6">
-        <div className="flex flex-col gap-6 h-[400px]">
-          <div className="text-center">
-            <div className="p-6 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700">
-              <p className="text-2xl font-bold">Caras conectadas: <span className="text-blue-400">{faceCount}</span></p>
-              <div className="mt-4 text-center text-gray-300">
-                {isFaceDetected ? '✅ Cara conectada' : '👀 Esperando conexión...'}
-              </div>
+      
+      {/* Bottom section - aligned with above sections */}
+      <div className="flex flex-col lg:flex-row gap-6 w-full max-w-6xl">
+        {/* Left section - same width as webcam */}
+        <div className="w-full lg:w-[640px] flex flex-col h-[180px]">
+          <div className="p-3 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 mb-3">
+            <p className="text-lg font-bold">Caras conectadas: <span className="text-blue-400">{faceCount}</span></p>
+            <div className="mt-1 text-center text-gray-300 text-sm">
+              {isFaceDetected ? '✅ Cara conectada' : '👀 Esperando conexión...'}
             </div>
-            <div className="p-6 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 flex-1">
-              <p className="text-xl font-semibold mb-4 text-white">📋 Instrucciones</p>
-              <ul className="text-sm text-left space-y-2 text-gray-300">
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>El contador aumenta cada vez que se detecta una cara</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Los puntos <span className="text-blue-400">azules</span> muestran los puntos faciales generales</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Los puntos <span className="text-red-400">rojos</span> marcan los labios</span>
-                </li>
-              </ul>
-            </div>
+          </div>
+          
+          <div className="p-3 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 flex-1">
+            <p className="text-base font-semibold mb-2 text-white">📋 Instrucciones</p>
+            <ul className="text-xs text-left space-y-1 text-gray-300">
+              <li className="flex items-start">
+                <span className="mr-2">•</span>
+                <span>El contador aumenta cada vez que se detecta una cara</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2">•</span>
+                <span>Los puntos <span className="text-green-400">verdes</span> muestran los ojos detectados</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2">•</span>
+                <span>Los puntos <span className="text-white">blancos</span> marcan otros puntos faciales</span>
+              </li>
+            </ul>
           </div>
         </div>
         
-        <div className="p-6 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 overflow-y-auto flex flex-col" style={{ height: '290px' }}>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-2xl font-semibold text-white">📜 Historial de detecciones</h3>
+        {/* Right section - same width as session tracker, full height */}
+        <div className="w-full lg:flex-1 h-[204px] p-3 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 overflow-y-auto flex flex-col">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-base font-semibold text-white">📜 Historial de detecciones</h3>
             {detectionHistory.length > 0 && (
               <button
                 onClick={clearDetectionHistory}
-                className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg transition-colors"
+                className="text-xs bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-lg transition-colors"
                 title="Borrar historial de detecciones"
               >
                 Borrar todo
@@ -464,16 +467,16 @@ export default function Home() {
             )}
           </div>
           {detectionHistory.length === 0 ? (
-            <p className="text-gray-400 text-center my-6">No hay detecciones registradas</p>
+            <p className="text-gray-400 text-center my-2 text-sm">No hay detecciones registradas</p>
           ) : (
-            <ul className="divide-y divide-gray-700">
+            <ul className="divide-y divide-gray-700 flex-1 overflow-y-auto">
               {detectionHistory.map((event, index) => (
-                <li key={event.id} className="py-3 flex justify-between items-center hover:bg-gray-800 px-2 rounded-lg transition-colors">
-                  <span className="text-gray-200">
+                <li key={event.id} className="py-1 flex justify-between items-center hover:bg-gray-800 px-1 rounded transition-colors">
+                  <span className="text-gray-200 text-xs">
                     <span className="font-medium">Detección #{detectionHistory.length - index}</span>
-                    <span className="text-xs text-gray-400 ml-2">ID: {event.id}</span>
+                    <span className="text-xs text-gray-400 ml-1">ID: {event.id}</span>
                   </span>
-                  <span className="text-xs bg-gray-800 text-gray-300 px-3 py-1 rounded-full border border-gray-600">
+                  <span className="text-xs bg-gray-800 text-gray-300 px-1 py-0.5 rounded border border-gray-600">
                     {event.timeString}
                   </span>
                 </li>
@@ -482,8 +485,6 @@ export default function Home() {
           )}
         </div>
       </div>
-      
-
     </main>
   );
 }
