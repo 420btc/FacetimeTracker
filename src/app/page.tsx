@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detection';
 import Webcam from 'react-webcam';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 
 // Lazy load the FaceSessionTracker to avoid SSR issues with WebGL
 const FaceSessionTracker = dynamic(
@@ -62,7 +63,6 @@ export default function Home() {
   };
 
   // Input resolution configuration
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const inputResolution = { width: 640, height: 480 }; // Tamaño fijo para escritorio
     
   const videoConstraints: MediaTrackConstraints = {
@@ -77,31 +77,8 @@ export default function Home() {
     setIsWebcamActive(prev => !prev);
   };
 
-  // Effect to handle webcam state changes
-  useEffect(() => {
-    if (isWebcamActive) {
-      runDetector();
-    } else {
-      // Clean up animation frame when turning off webcam
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-      // Clear canvas when webcam is off
-      const canvas = canvasRef.current;
-      const ctx = canvas?.getContext('2d');
-      if (ctx && canvas) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
-      // Reset face detection state
-      setIsFaceDetected(false);
-    }
-    // We only want to run this effect when isWebcamActive changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isWebcamActive]);
-
   // Load and configure the model
-  const runDetector = async () => {
+  const runDetector = useCallback(async () => {
     if (!isWebcamActive) return; // Don't run detector if webcam is off
     try {
       // Set WebGL backend with fallback to CPU if needed
@@ -230,7 +207,28 @@ export default function Home() {
     } catch (error) {
       console.error('Error loading model:', error);
     }
-  };
+  }, [isWebcamActive, faceCount]);
+
+  // Effect to handle webcam state changes
+  useEffect(() => {
+    if (isWebcamActive) {
+      runDetector();
+    } else {
+      // Clean up animation frame when turning off webcam
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+      // Clear canvas when webcam is off
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (ctx && canvas) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      // Reset face detection state
+      setIsFaceDetected(false);
+    }
+  }, [isWebcamActive, runDetector]);
 
   // Clean up on component unmount
   useEffect(() => {
@@ -257,9 +255,11 @@ export default function Home() {
       <div className="flex flex-col items-center mb-6">
         <div className="flex items-center justify-center gap-3">
           {/* Left icon - hidden on mobile */}
-          <img 
+          <Image 
             src="/iconox.png" 
             alt="Logo" 
+            width={96}
+            height={96}
             className="hidden md:block h-9 w-9 object-contain" 
             style={{ height: '6em', width: 'auto' }}
           />
@@ -267,9 +267,11 @@ export default function Home() {
             FaceTime Tracker
           </h1>
           {/* Right icon - hidden on mobile */}
-          <img 
+          <Image 
             src="/iconox.png" 
             alt="Logo" 
+            width={96}
+            height={96}
             className="hidden md:block h-9 w-9 object-contain" 
             style={{ height: '6em', width: 'auto' }}
           />
@@ -295,7 +297,7 @@ export default function Home() {
             <div className="absolute w-full h-full bg-black bg-opacity-70 rounded-xl flex items-center justify-center">
               <div className="text-white text-center p-4">
                 <p className="text-xl font-semibold mb-2">Cámara desactivada</p>
-                <p className="text-gray-300 text-sm">Haz clic en "Activar Cámara" para comenzar</p>
+                <p className="text-gray-300 text-sm">Haz clic en &quot;Activar Cámara&quot; para comenzar</p>
               </div>
             </div>
           )}
@@ -315,10 +317,10 @@ export default function Home() {
         {/* Session Tracker - Sidebar */}
         <div className="w-full lg:flex-1 h-[480px]">
           <FaceSessionTracker 
-        isFaceDetected={isFaceDetected} 
-        isWebcamActive={isWebcamActive}
-        onWebcamToggle={toggleWebcam}
-      />
+            isFaceDetected={isFaceDetected} 
+            isWebcamActive={isWebcamActive}
+            onWebcamToggle={toggleWebcam}
+          />
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-6xl mx-auto mt-6">
