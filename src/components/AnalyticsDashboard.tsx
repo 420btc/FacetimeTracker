@@ -44,40 +44,125 @@ const BarChart: React.FC<BarChartProps> = ({ data, maxValue }) => {
   );
 };
 
-const SpiralChart: React.FC<SpiralChartProps> = ({ data }) => {
+const DualSpiralChart: React.FC<SpiralChartProps> = ({ data }) => {
   const maxValue = Math.max(...data.map((d: { value: number }) => d.value));
 
-  return (
-    <div className="relative w-full h-32 flex items-center justify-center">
-      <div className="relative w-24 h-24">
-        {data.map((item, index) => {
-          const angle = (index / 24) * 360;
-          const radius = 40;
+  // Separar datos en día (6 AM - 6 PM) y noche (6 PM - 6 AM)
+  const dayData = data.filter(item => item.hour >= 6 && item.hour < 18);
+  const nightData = [
+    ...data.filter(item => item.hour >= 18 || item.hour < 6)
+  ].sort((a, b) => {
+    // Ordenar noche: 18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5
+    const aHour = a.hour >= 18 ? a.hour : a.hour + 24;
+    const bHour = b.hour >= 18 ? b.hour : b.hour + 24;
+    return aHour - bHour;
+  });
+
+  const renderSpiral = (spiralData: any[], centerX: number, centerY: number, radius: number, label: string, isDay: boolean) => {
+    return (
+      <div className="relative">
+        {spiralData.map((item, index) => {
+          const angle = (index / 12) * 360;
           const intensity = maxValue > 0 ? (item.value / maxValue) : 0;
-          const size = 2 + intensity * 4;
+          const size = 3 + intensity * 8; // Tamaño más variable (3-11px)
           
           const x = Math.cos((angle - 90) * Math.PI / 180) * radius;
           const y = Math.sin((angle - 90) * Math.PI / 180) * radius;
           
+          // Colores diferentes para día y noche
+          const baseColor = isDay ? 'bg-yellow-400' : 'bg-blue-400';
+          const glowColor = isDay ? 'shadow-yellow-400/50' : 'shadow-blue-400/50';
+          
           return (
             <div
-              key={index}
-              className={`absolute rounded-full ${item.color} transition-all duration-300`}
+              key={`${label}-${index}`}
+              className={`absolute rounded-full ${baseColor} transition-all duration-500 ${intensity > 0.3 ? `shadow-lg ${glowColor}` : ''}`}
               style={{
                 width: `${size}px`,
                 height: `${size}px`,
-                left: `calc(50% + ${x}px - ${size/2}px)`,
-                top: `calc(50% + ${y}px - ${size/2}px)`,
-                opacity: 0.3 + intensity * 0.7
+                left: `${centerX + x - size/2}px`,
+                top: `${centerY + y - size/2}px`,
+                opacity: 0.4 + intensity * 0.6,
+                zIndex: Math.round(intensity * 10)
               }}
               title={`${item.hour}:00 - ${Math.round(item.value / 60)}min`}
             />
           );
         })}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-xs text-gray-400 text-center">
-            <div>24h</div>
-            <div>Patrón</div>
+        
+        {/* Etiquetas de horas principales */}
+        {spiralData.map((item, index) => {
+          if (index % 3 === 0) { // Mostrar cada 3 horas
+            const angle = (index / 12) * 360;
+            const labelRadius = radius + 15;
+            const x = Math.cos((angle - 90) * Math.PI / 180) * labelRadius;
+            const y = Math.sin((angle - 90) * Math.PI / 180) * labelRadius;
+            
+            return (
+              <div
+                key={`label-${label}-${index}`}
+                className="absolute text-xs text-gray-400 pointer-events-none"
+                style={{
+                  left: `${centerX + x - 8}px`,
+                  top: `${centerY + y - 6}px`,
+                  fontSize: '8px'
+                }}
+              >
+                {item.hour}
+              </div>
+            );
+          }
+          return null;
+        })}
+        
+        {/* Centro con etiqueta */}
+        <div 
+          className="absolute flex items-center justify-center"
+          style={{
+            left: `${centerX - 20}px`,
+            top: `${centerY - 15}px`,
+            width: '40px',
+            height: '30px'
+          }}
+        >
+          <div className="text-xs text-gray-300 text-center leading-tight">
+            <div className={`font-semibold ${isDay ? 'text-yellow-400' : 'text-blue-400'}`} style={{ fontSize: '10px' }}>
+              {isDay ? '☀️' : '🌙'}
+            </div>
+            <div style={{ fontSize: '7px' }}>{label}</div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="relative w-full h-40 flex items-center justify-center">
+      <div className="relative w-full h-full">
+        {/* Espiral de día (izquierda) */}
+        <div className="absolute left-0 top-0 w-1/2 h-full">
+          {renderSpiral(dayData, 80, 80, 35, 'DÍA', true)}
+        </div>
+        
+        {/* Espiral de noche (derecha) */}
+        <div className="absolute right-0 top-0 w-1/2 h-full">
+          {renderSpiral(nightData, 80, 80, 35, 'NOCHE', false)}
+        </div>
+        
+        {/* Línea divisoria */}
+        <div className="absolute left-1/2 top-2 bottom-2 w-px bg-gray-600 transform -translate-x-0.5"></div>
+        
+        {/* Leyenda */}
+        <div className="absolute top-2 right-2 bg-gray-800 bg-opacity-80 rounded-md px-2 py-1 border border-gray-600">
+          <div className="flex gap-3 text-xs">
+            <div className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full"></div>
+              <span className="text-gray-300" style={{ fontSize: '8px' }}>Día</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
+              <span className="text-gray-300" style={{ fontSize: '8px' }}>Noche</span>
+            </div>
           </div>
         </div>
       </div>
@@ -234,9 +319,9 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ sessions }) => 
               <FaChartBar className="text-purple-400" />
               Patrón Diario (24h)
             </h4>
-            <SpiralChart data={analytics.hourData} />
+            <DualSpiralChart data={analytics.hourData} />
             <div className="text-xs text-gray-400 text-center mt-2">
-              Centro = 12 AM • Exterior = Mayor actividad
+              Tamaño del punto = Tiempo de actividad por hora
             </div>
           </div>
         )}
