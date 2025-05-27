@@ -184,7 +184,7 @@ export default function SessionHistory({ sessions, onClearSessions }: SessionHis
         </div>
       </div>
       {sessions.length > 0 ? (
-        <div className="flex-1 overflow-y-auto pr-1 space-y-1" style={{ maxHeight: 'calc(100% - 40px)' }}>
+        <div className="flex-1 overflow-y-auto pr-1 space-y-1 scrollbar-hide" style={{ maxHeight: 'calc(100% - 40px)' }}>
           {sortedSessions.map((session, index) => {
             const badge = getDurationBadge(session, index, sessions);
             const healthBadge = getHealthBadge(session.duration);

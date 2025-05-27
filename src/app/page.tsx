@@ -437,7 +437,7 @@ export default function Home() {
       {/* Webcam and Session Tracker Row */}
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Webcam */}
-        <div className="relative w-full lg:w-[640px] h-[480px] bg-black rounded-xl overflow-hidden">
+        <div className="relative w-full lg:w-[640px] h-[480px] bg-black rounded-xl overflow-hidden scrollbar-hide">
             {isWebcamActive ? (
               <Webcam
                 ref={webcamRef}
@@ -471,7 +471,7 @@ export default function Home() {
           </div>
           
           {/* Session Tracker - Sidebar */}
-          <div className="w-full lg:flex-1 h-[422px]">
+          <div className="w-full lg:flex-1 h-[422px] scrollbar-hide">
             <div className="hidden lg:block mb-4">
               <a 
                 href="https://facetrackerdos.vercel.app/webcam_face_detection"
@@ -497,7 +497,7 @@ export default function Home() {
         {/* Instructions and Achievements Row */}
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Instructions - Left side */}
-          <div className="w-full lg:w-[640px] h-[280px] p-4 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 overflow-y-auto">
+          <div className="w-full lg:w-[640px] h-[280px] p-4 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 overflow-y-auto scrollbar-hide">
             <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
               <span className="text-2xl">📋</span>
               Instrucciones de uso
@@ -598,7 +598,7 @@ export default function Home() {
           </div>
 
           {/* Achievements - Right side */}
-          <div className="w-full lg:flex-1">
+          <div className="w-full lg:flex-1 scrollbar-hide">
             <AchievementSystem 
               sessions={faceSessions}
               currentSessionTime={currentSessionTime}
@@ -609,7 +609,7 @@ export default function Home() {
         {/* History and Analytics Row */}
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Detection History - Left side */}
-          <div className="w-full lg:w-[640px] h-[280px] p-3 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 overflow-y-auto flex flex-col">
+          <div className="w-full lg:w-[640px] h-[280px] p-3 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 overflow-y-auto flex flex-col scrollbar-hide">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-base font-semibold text-white">📜 Historial de detecciones</h3>
               {detectionHistory.length > 0 && (
@@ -625,7 +625,7 @@ export default function Home() {
             {detectionHistory.length === 0 ? (
               <p className="text-gray-400 text-center my-2 text-sm">No hay detecciones registradas</p>
             ) : (
-              <ul className="divide-y divide-gray-700 flex-1 overflow-y-auto">
+              <ul className="divide-y divide-gray-700 flex-1 overflow-y-auto scrollbar-hide">
                 {detectionHistory.map((event, index) => (
                   <li key={event.id} className="py-2 flex justify-between items-center hover:bg-gray-800 px-2 rounded transition-colors">
                     <div className="flex flex-col gap-1">
@@ -659,7 +659,7 @@ export default function Home() {
           </div>
 
           {/* Analytics Dashboard - Right side */}
-          <div className="w-full lg:flex-1">
+          <div className="w-full lg:flex-1 scrollbar-hide">
             <AnalyticsDashboard sessions={faceSessions} />
           </div>
         </div>

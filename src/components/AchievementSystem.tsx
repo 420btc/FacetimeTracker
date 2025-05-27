@@ -1083,7 +1083,7 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
   const progressPercentage = (unlockedCount / achievements.length) * 100;
 
   return (
-    <div className="p-4 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 h-[280px] overflow-y-auto">
+    <div className="p-4 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 h-[280px] overflow-y-auto scrollbar-hide">
       <div className="flex justify-between items-center mb-4">
         <div>
           <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
