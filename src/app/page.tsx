@@ -77,18 +77,35 @@ export default function Home() {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
+
+    // Check if we're in a secure context (required for camera access in production)
+    if (window.isSecureContext === false) {
+      console.error('Camera access requires a secure context (HTTPS)');
+      return;
+    }
     
     try {
-      // Load the faceLandmarksDetection model
-      const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
-      const detectorConfig: faceLandmarksDetection.MediaPipeFaceMeshMediaPipeModelConfig = {
-        runtime: 'mediapipe',
-        solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh',
-        refineLandmarks: true,
-      };
-      
-      const detector = await faceLandmarksDetection.createDetector(model, detectorConfig);
-      detectorRef.current = detector;
+      console.log('Loading face detection model...');
+      try {
+        // Load the faceLandmarksDetection model with more robust configuration
+        const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
+        const detectorConfig: faceLandmarksDetection.MediaPipeFaceMeshMediaPipeModelConfig = {
+          runtime: 'mediapipe',
+          solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh',
+          refineLandmarks: true,
+          maxFaces: 1, // Optimize for single face detection
+        };
+        
+        console.log('Creating face detector...');
+        const detector = await faceLandmarksDetection.createDetector(model, detectorConfig);
+        detectorRef.current = detector;
+        console.log('Face detector created successfully');
+      } catch (error) {
+        console.error('Error initializing face detection:', error);
+        // Show error to user
+        alert('No se pudo cargar el detector de rostros. Por favor, recarga la página o inténtalo más tarde.');
+        return;
+      }
 
       // Function to detect faces
       const detect = async () => {
@@ -311,8 +328,22 @@ export default function Home() {
 
   // Effect to handle webcam state changes
   useEffect(() => {
+    console.log('Webcam state changed:', { isWebcamActive, isFaceDetected });
+    
     if (isWebcamActive) {
-      runDetector();
+      // Request camera permissions explicitly
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          // If we get here, we have camera permissions
+          console.log('Camera access granted');
+          stream.getTracks().forEach(track => track.stop()); // Stop the stream as we'll use it through react-webcam
+          runDetector();
+        })
+        .catch(err => {
+          console.error('Camera access error:', err);
+          alert('No se pudo acceder a la cámara. Por favor, asegúrate de otorgar los permisos necesarios.');
+          setIsWebcamActive(false);
+        });
     } else {
       // Clean up timeout when turning off webcam
       if (timeoutRef.current) {
