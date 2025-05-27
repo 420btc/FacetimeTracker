@@ -74,6 +74,9 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
   const [userLevel, setUserLevel] = useState(1);
   const [totalPoints, setTotalPoints] = useState(0);
 
+  // New state for sorting mode: 'all', 'completed', 'notCompleted'
+  const [sortMode, setSortMode] = useState<'all' | 'completed' | 'notCompleted'>('all');
+
   // Función para calcular días consecutivos
   const calculateConsecutiveDays = (sessions: FaceSession[]): number => {
     if (sessions.length === 0) return 0;
@@ -1085,13 +1088,34 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
   return (
     <div className="p-4 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 h-[280px] overflow-y-auto scrollbar-hide">
       <div className="flex justify-between items-center mb-4">
-        <div>
+        <div className="flex items-center gap-4">
           <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
             <FaTrophy className="text-yellow-400" />
             Logros
           </h3>
-          <div className="text-sm text-gray-300">
-            <span className="font-semibold text-blue-400">{unlockedCount}/{totalAchievements}</span> logros desbloqueados
+          {/* Smaller sorting buttons inline next to title */}
+          <div className="flex gap-1">
+            <button
+              className={`px-2 py-0.5 text-xs rounded ${sortMode === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+              onClick={() => setSortMode('all')}
+              aria-label="Mostrar todos los logros"
+            >
+              Todos
+            </button>
+            <button
+              className={`px-2 py-0.5 text-xs rounded ${sortMode === 'completed' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+              onClick={() => setSortMode('completed')}
+              aria-label="Mostrar logros completados"
+            >
+              Completados
+            </button>
+            <button
+              className={`px-2 py-0.5 text-xs rounded ${sortMode === 'notCompleted' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+              onClick={() => setSortMode('notCompleted')}
+              aria-label="Mostrar logros no completados"
+            >
+              No Completados
+            </button>
           </div>
         </div>
         <div className="text-right">
@@ -1100,65 +1124,65 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
         </div>
       </div>
 
-      <div className="mb-4">
-        <div className="flex justify-between text-xs text-gray-400 mb-1">
-          <span>Progreso General</span>
-          <span>{unlockedCount}/{achievements.length}</span>
-        </div>
-        <div className="w-full bg-gray-700 rounded-full h-2">
-          <div 
-            className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-500"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
-      </div>
-
       <div className="space-y-2">
-        {achievements.map((achievement) => (
-          <div
-            key={achievement.id}
-            className={`p-3 rounded-lg border transition-all duration-300 ${
-              achievement.unlocked
-                ? 'bg-gray-800 border-gray-600 shadow-lg'
-                : 'bg-gray-900 border-gray-700 opacity-60'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-full ${achievement.unlocked ? achievement.color : 'bg-gray-700'}`}>
-                {achievement.icon}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h4 className={`font-semibold text-sm ${achievement.unlocked ? 'text-white' : 'text-gray-400'}`}>
-                    {achievement.title}
-                  </h4>
-                  {achievement.unlocked && (
-                    <FaStar className="text-yellow-400 text-xs" />
+        {achievements
+          .filter(achievement => {
+            if (sortMode === 'completed') return achievement.unlocked;
+            if (sortMode === 'notCompleted') return !achievement.unlocked;
+            return true;
+          })
+          .sort((a, b) => {
+            if (sortMode === 'notCompleted') {
+              // Sort by progress descending for not completed achievements
+              return (b.progress || 0) - (a.progress || 0);
+            }
+            return 0;
+          })
+          .map((achievement) => (
+            <div
+              key={achievement.id}
+              className={`p-3 rounded-lg border transition-all duration-300 ${
+                achievement.unlocked
+                  ? 'bg-gray-800 border-gray-600 shadow-lg'
+                  : 'bg-gray-900 border-gray-700 opacity-60'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${achievement.unlocked ? achievement.color : 'bg-gray-700'}`}>
+                  {achievement.icon}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className={`font-semibold text-sm ${achievement.unlocked ? 'text-white' : 'text-gray-400'}`}>
+                      {achievement.title}
+                    </h4>
+                    {achievement.unlocked && (
+                      <FaStar className="text-yellow-400 text-xs" />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400">{achievement.description}</p>
+                  {achievement.maxProgress && achievement.maxProgress > 1 && (
+                    <div className="mt-2">
+                      <div className="w-full bg-gray-700 rounded-full h-1">
+                        <div 
+                          className="bg-blue-500 h-1 rounded-full transition-all duration-300"
+                          style={{ width: `${((achievement.progress || 0) / achievement.maxProgress) * 100}%` }}
+                        />
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {achievement.progress || 0}/{achievement.maxProgress}
+                      </div>
+                    </div>
                   )}
                 </div>
-                <p className="text-xs text-gray-400">{achievement.description}</p>
-                {achievement.maxProgress && achievement.maxProgress > 1 && (
-                  <div className="mt-2">
-                    <div className="w-full bg-gray-700 rounded-full h-1">
-                      <div 
-                        className="bg-blue-500 h-1 rounded-full transition-all duration-300"
-                        style={{ width: `${((achievement.progress || 0) / achievement.maxProgress) * 100}%` }}
-                      />
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {achievement.progress || 0}/{achievement.maxProgress}
-                    </div>
+                {achievement.unlocked && achievement.unlockedAt && (
+                  <div className="text-xs text-gray-500">
+                    {new Date(achievement.unlockedAt).toLocaleDateString()}
                   </div>
                 )}
               </div>
-              {achievement.unlocked && achievement.unlockedAt && (
-                <div className="text-xs text-gray-500">
-                  {new Date(achievement.unlockedAt).toLocaleDateString()}
-                </div>
-              )}
             </div>
-          </div>
-        ))}
+          ))}
       </div>
     </div>
   );
