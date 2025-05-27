@@ -430,7 +430,7 @@ export default function Home() {
           rel="noopener noreferrer"
           className="block w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-center"
         >
-          📱 Versión Móvil
+          🚀 Prueba más funciones!
         </a>
       </div>
 
@@ -473,13 +473,13 @@ export default function Home() {
           {/* Session Tracker - Sidebar */}
           <div className="w-full lg:flex-1 h-[422px] scrollbar-hide">
             <div className="hidden lg:block mb-4">
-              <a 
+                <a 
                 href="https://facetrackerdos.vercel.app/webcam_face_detection"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-center"
               >
-                📱 Versión Móvil
+                🚀 Prueba más funciones!
               </a>
             </div>
             <FaceSessionTracker 
