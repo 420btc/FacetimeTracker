@@ -19,20 +19,22 @@ export const useSmartAlerts = ({
   isSessionActive,
   config = {}
 }: SmartAlertsHook) => {
-  // Configuración por defecto
-  const defaultConfig: AlertConfig = {
-    enabled: true,
-    minDuration: 3600, // 1 hora en segundos
-    alertInterval: 1800, // 30 minutos entre alertas
-    notificationTitle: '¡Hora de tomar un descanso!',
-    notificationMessage: 'Has estado concentrado por más de 1 hora. Considera tomar un descanso.'
-  };
-
   // Combinar configuración por defecto con la personalizada
-  const finalConfig = useMemo<AlertConfig>(() => ({
-    ...defaultConfig,
-    ...config
-  }), [config, defaultConfig]);
+  const finalConfig = useMemo<AlertConfig>(() => {
+    // Configuración por defecto
+    const defaultConfig: AlertConfig = {
+      enabled: true,
+      minDuration: 3600, // 1 hora en segundos
+      alertInterval: 1800, // 30 minutos entre alertas
+      notificationTitle: '¡Hora de tomar un descanso!',
+      notificationMessage: 'Has estado concentrado por más de 1 hora. Considera tomar un descanso.'
+    };
+    
+    return {
+      ...defaultConfig,
+      ...config
+    };
+  }, [config]);
 
   const lastAlertTimeRef = useRef<number>(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);

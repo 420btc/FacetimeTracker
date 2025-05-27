@@ -23,6 +23,20 @@ interface FaceSession {
   duration: number;
 }
 
+// TypeScript interfaces for face detection
+interface FaceKeypoint {
+  x: number;
+  y: number;
+}
+
+interface DetectedFace {
+  keypoints: FaceKeypoint[];
+}
+
+interface FaceDetector {
+  estimateFaces: (video: HTMLVideoElement) => Promise<DetectedFace[]>;
+}
+
 export default function Home() {
   const [faceSessions, setFaceSessions] = useState<FaceSession[]>([]);
   const [currentSessionTime, setCurrentSessionTime] = useState(0);
@@ -39,7 +53,7 @@ export default function Home() {
   
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const detectorRef = useRef<{ estimateFaces: (video: HTMLVideoElement) => Promise<Array<{ keypoints: Array<{ x: number; y: number }> }>> } | null>(null);
+  const detectorRef = useRef<FaceDetector | null>(null);
   const wasFaceDetected = useRef(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isPageHiddenRef = useRef(false);
@@ -139,13 +153,7 @@ export default function Home() {
 
           try {
             // Make Detections - ALWAYS run, even when page is hidden
-            interface FaceDetector {
-              estimateFaces: (video: HTMLVideoElement) => Promise<Array<{
-                keypoints: Array<{x: number, y: number}>;
-                // Add other face detection properties as needed
-              }>>;
-            }
-            const faces = await (detectorRef.current as unknown as FaceDetector).estimateFaces(video);
+            const faces = await detectorRef.current.estimateFaces(video);
             
             // Get canvas context
             const canvas = canvasRef.current;
@@ -202,7 +210,7 @@ export default function Home() {
             // Only draw visual elements if page is visible
             if (ctx && canvas && !isPageHiddenRef.current) {
               // Draw facial landmarks and bounding box
-              faces.forEach((face: any) => {
+              faces.forEach((face: DetectedFace) => {
                 const keypoints = face.keypoints;
                 
                 // Calculate bounding box based on keypoints
@@ -211,7 +219,7 @@ export default function Home() {
                   let maxX = -Infinity, maxY = -Infinity;
                   
                   // Find keypoint boundaries
-                  keypoints.forEach((keypoint: any) => {
+                  keypoints.forEach((keypoint: FaceKeypoint) => {
                     if (typeof keypoint.x === 'number' && typeof keypoint.y === 'number') {
                       minX = Math.min(minX, keypoint.x);
                       minY = Math.min(minY, keypoint.y);
@@ -259,7 +267,7 @@ export default function Home() {
                 
                 // Draw facial landmark points
                 if (Array.isArray(keypoints)) {
-                  keypoints.forEach((keypoint: any, index: number) => {
+                  keypoints.forEach((keypoint: FaceKeypoint, index: number) => {
                     if (typeof keypoint.x === 'number' && typeof keypoint.y === 'number') {
                       // MediaPipe FaceMesh keypoint indices for eyes
                       const leftEyeIndices = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246];
@@ -383,7 +391,7 @@ export default function Home() {
       // Reset face detection state
       setIsFaceDetected(false);
     }
-  }, [isWebcamActive, isDetectionActive, runDetector, isFaceDetected]);
+  }, [isWebcamActive, isDetectionActive, runDetector]);
 
   // Clean up on component unmount
   useEffect(() => {
