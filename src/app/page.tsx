@@ -627,14 +627,31 @@ export default function Home() {
             ) : (
               <ul className="divide-y divide-gray-700 flex-1 overflow-y-auto">
                 {detectionHistory.map((event, index) => (
-                  <li key={event.id} className="py-1 flex justify-between items-center hover:bg-gray-800 px-1 rounded transition-colors">
-                    <span className="text-gray-200 text-xs">
-                      <span className="font-medium">Detección #{detectionHistory.length - index}</span>
-                      <span className="text-xs text-gray-400 ml-1">ID: {event.id}</span>
-                    </span>
-                    <span className="text-xs bg-gray-800 text-gray-300 px-1 py-0.5 rounded border border-gray-600">
-                      {new Date(event.timestamp).toLocaleTimeString()}
-                    </span>
+                  <li key={event.id} className="py-2 flex justify-between items-center hover:bg-gray-800 px-2 rounded transition-colors">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-gray-200 text-xs">
+                        <span className="font-medium">Detección #{detectionHistory.length - index}</span>
+                        <span className="text-xs text-gray-400 ml-1">ID: {event.id}</span>
+                      </span>
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <span className="text-xs bg-blue-800 text-blue-200 px-2 py-0.5 rounded border border-blue-600">
+                        {new Date(event.timestamp).toLocaleDateString('es-ES', { 
+                          day: '2-digit', 
+                          month: 'short' 
+                        })}
+                      </span>
+                      <span className="text-xs bg-purple-800 text-purple-200 px-2 py-0.5 rounded border border-purple-600">
+                        {new Date(event.timestamp).getFullYear()}
+                      </span>
+                      <span className="text-xs bg-green-800 text-green-200 px-2 py-0.5 rounded border border-green-600">
+                        {new Date(event.timestamp).toLocaleTimeString('es-ES', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit'
+                        })}
+                      </span>
+                    </div>
                   </li>
                 ))}
               </ul>
