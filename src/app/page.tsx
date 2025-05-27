@@ -139,7 +139,13 @@ export default function Home() {
 
           try {
             // Make Detections - ALWAYS run, even when page is hidden
-            const faces = await (detectorRef.current as any).estimateFaces(video);
+            interface FaceDetector {
+              estimateFaces: (video: HTMLVideoElement) => Promise<Array<{
+                keypoints: Array<{x: number, y: number}>;
+                // Add other face detection properties as needed
+              }>>;
+            }
+            const faces = await (detectorRef.current as unknown as FaceDetector).estimateFaces(video);
             
             // Get canvas context
             const canvas = canvasRef.current;
@@ -377,7 +383,7 @@ export default function Home() {
       // Reset face detection state
       setIsFaceDetected(false);
     }
-  }, [isWebcamActive, isDetectionActive, runDetector]);
+  }, [isWebcamActive, isDetectionActive, runDetector, isFaceDetected]);
 
   // Clean up on component unmount
   useEffect(() => {
