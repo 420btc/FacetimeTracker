@@ -2,8 +2,6 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Webcam from 'react-webcam';
-import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detection';
-import '@tensorflow/tfjs-backend-webgl';
 import dynamic from 'next/dynamic';
 import { useSmartAlerts } from '../hooks/useSmartAlerts';
 
@@ -41,7 +39,7 @@ export default function Home() {
   
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const detectorRef = useRef<faceLandmarksDetection.FaceLandmarksDetector | null>(null);
+  const detectorRef = useRef<any>(null);
   const wasFaceDetected = useRef(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isPageHiddenRef = useRef(false);
@@ -88,9 +86,15 @@ export default function Home() {
     try {
       console.log('Loading face detection model...');
       try {
+        // Cargar TensorFlow.js dinámicamente
+        const [faceLandmarksDetection] = await Promise.all([
+          import('@tensorflow-models/face-landmarks-detection'),
+          import('@tensorflow/tfjs-backend-webgl')
+        ]);
+        
         // Load the faceLandmarksDetection model with more robust configuration
         const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
-        const detectorConfig: faceLandmarksDetection.MediaPipeFaceMeshMediaPipeModelConfig = {
+        const detectorConfig: any = {
           runtime: 'mediapipe',
           solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh',
           refineLandmarks: true,
@@ -201,7 +205,7 @@ export default function Home() {
                   let maxX = -Infinity, maxY = -Infinity;
                   
                   // Find keypoint boundaries
-                  keypoints.forEach((keypoint) => {
+                  keypoints.forEach((keypoint: any) => {
                     minX = Math.min(minX, keypoint.x);
                     minY = Math.min(minY, keypoint.y);
                     maxX = Math.max(maxX, keypoint.x);
@@ -246,7 +250,7 @@ export default function Home() {
                 }
                 
                 // Draw facial landmark points
-                keypoints.forEach((keypoint, index) => {
+                keypoints.forEach((keypoint: any, index: number) => {
                   // MediaPipe FaceMesh keypoint indices for eyes
                   const leftEyeIndices = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246];
                   const rightEyeIndices = [362, 398, 384, 385, 386, 387, 388, 466, 263, 249, 390, 373, 374, 380, 381, 382];

@@ -24,7 +24,10 @@ import {
   FaLightbulb, 
   FaFlask, 
   FaSnowflake, 
-  FaCircle 
+  FaCircle,
+  FaClock,
+  FaGamepad,
+  FaThumbsUp
 } from 'react-icons/fa';
 
 interface FaceSession {
@@ -283,6 +286,56 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
       icon: <FaShieldAlt className="text-blue-600" />,
       color: 'bg-blue-700',
       maxProgress: 20
+    },
+    
+    // Nuevos logros (6 adicionales)
+    {
+      id: 'time_collector',
+      title: 'Coleccionista de Tiempo',
+      description: 'Acumula 10 horas totales de enfoque',
+      icon: <FaClock className="text-cyan-400" />,
+      color: 'bg-cyan-500',
+      maxProgress: 36000
+    },
+    {
+      id: 'time_master',
+      title: 'Maestro del Tiempo',
+      description: 'Acumula 25 horas totales de enfoque',
+      icon: <FaInfinity className="text-purple-400" />,
+      color: 'bg-purple-600',
+      maxProgress: 90000
+    },
+    {
+      id: 'weekend_warrior',
+      title: 'Guerrero de Fin de Semana',
+      description: 'Completa sesiones en sábado y domingo',
+      icon: <FaCalendarAlt className="text-orange-400" />,
+      color: 'bg-orange-600',
+      maxProgress: 2
+    },
+    {
+      id: 'monday_motivation',
+      title: 'Motivación de Lunes',
+      description: 'Completa una sesión en lunes',
+      icon: <FaRocket className="text-green-400" />,
+      color: 'bg-green-600',
+      maxProgress: 1
+    },
+    {
+      id: 'speed_demon',
+      title: 'Demonio de Velocidad',
+      description: 'Completa 10 sesiones de menos de 10 minutos',
+      icon: <FaBolt className="text-yellow-400" />,
+      color: 'bg-yellow-600',
+      maxProgress: 10
+    },
+    {
+      id: 'zen_master',
+      title: 'Maestro Zen',
+      description: 'Completa una sesión de más de 4 horas',
+      icon: <FaMagic className="text-purple-500" />,
+      color: 'bg-gradient-to-r from-purple-600 to-pink-600',
+      maxProgress: 1
     }
   ], []);
 
@@ -292,6 +345,9 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
       let unlocked = existing?.unlocked || false;
       let unlockedAt = existing?.unlockedAt;
       let progress = 0;
+
+      // Calcular tiempo total acumulado
+      const totalTime = sessions.reduce((acc, session) => acc + session.duration, 0);
 
       switch (def.id) {
         case 'first_step':
@@ -384,7 +440,6 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
           break;
 
         case 'consistency_starter':
-          // Calcular streak simple basado en días únicos
           const uniqueDays = new Set(sessions.map(s => 
             new Date(s.startTime).toDateString()
           ));
@@ -396,7 +451,6 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
           break;
 
         case 'consistency_builder':
-          // Calcular streak simple basado en días únicos
           const uniqueDaysBuilder = new Set(sessions.map(s => 
             new Date(s.startTime).toDateString()
           ));
@@ -408,7 +462,6 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
           break;
 
         case 'consistency_master':
-          // Calcular streak simple basado en días únicos
           const uniqueDaysMaster = new Set(sessions.map(s => 
             new Date(s.startTime).toDateString()
           ));
@@ -420,7 +473,6 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
           break;
 
         case 'consistency_legend':
-          // Calcular streak simple basado en días únicos
           const uniqueDaysLegend = new Set(sessions.map(s => 
             new Date(s.startTime).toDateString()
           ));
@@ -488,7 +540,6 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
           break;
 
         case 'productive_day':
-          // Verificar si hay un día con más de 2 horas
           const dayTotals = sessions.reduce((acc, session) => {
             const day = new Date(session.startTime).toDateString();
             acc[day] = (acc[day] || 0) + session.duration;
@@ -504,7 +555,6 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
           break;
 
         case 'super_productive':
-          // Verificar si hay un día con más de 4 horas
           const dayTotalsSuper = sessions.reduce((acc, session) => {
             const day = new Date(session.startTime).toDateString();
             acc[day] = (acc[day] || 0) + session.duration;
@@ -520,7 +570,6 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
           break;
 
         case 'ultra_productive':
-          // Verificar si hay un día con más de 6 horas
           const dayTotalsUltra = sessions.reduce((acc, session) => {
             const day = new Date(session.startTime).toDateString();
             acc[day] = (acc[day] || 0) + session.duration;
@@ -536,7 +585,6 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
           break;
 
         case 'legendary_productive':
-          // Verificar si hay un día con más de 8 horas
           const dayTotalsLegendary = sessions.reduce((acc, session) => {
             const day = new Date(session.startTime).toDateString();
             acc[day] = (acc[day] || 0) + session.duration;
@@ -574,6 +622,64 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
             unlockedAt = Date.now();
           }
           break;
+
+        // Nuevos logros
+        case 'time_collector':
+          progress = Math.min(totalTime, 36000);
+          if (!unlocked && totalTime >= 36000) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'time_master':
+          progress = Math.min(totalTime, 90000);
+          if (!unlocked && totalTime >= 90000) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'weekend_warrior':
+          const weekendDays = new Set(sessions.filter(s => {
+            const day = new Date(s.startTime).getDay();
+            return day === 0 || day === 6; // Domingo o Sábado
+          }).map(s => new Date(s.startTime).getDay()));
+          progress = weekendDays.size;
+          if (!unlocked && progress >= 2) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'monday_motivation':
+          const hasMondaySession = sessions.some(s => {
+            const day = new Date(s.startTime).getDay();
+            return day === 1; // Lunes
+          });
+          progress = hasMondaySession ? 1 : 0;
+          if (!unlocked && progress >= 1) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'speed_demon':
+          progress = sessions.filter(s => s.duration < 600).length; // menos de 10 minutos
+          if (!unlocked && progress >= 10) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'zen_master':
+          const hasZenSession = sessions.some(s => s.duration >= 14400) || currentSessionTime >= 14400; // 4 horas
+          progress = hasZenSession ? 1 : 0;
+          if (!unlocked && progress >= 1) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
       }
 
       return {
@@ -584,7 +690,6 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
       };
     });
 
-    // Solo actualizar si hay cambios reales
     const hasChanges = newAchievements.some((newAch, index) => {
       const oldAch = achievements[index];
       return !oldAch || 
@@ -594,8 +699,6 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
 
     if (hasChanges || achievements.length !== newAchievements.length) {
       setAchievements(newAchievements);
-      
-      // Calcular puntos y nivel
       const points = newAchievements.filter(a => a.unlocked).length * 100;
       setTotalPoints(points);
       setUserLevel(Math.floor(points / 300) + 1);
@@ -608,10 +711,9 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
 
   return (
     <div className="p-4 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 h-[280px] overflow-y-auto">
-      {/* Header con estadísticas */}
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h3 className="text-lg font-bold text-white mb-1">
+          <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
             <FaTrophy className="text-yellow-400" />
             Logros
           </h3>
@@ -625,7 +727,6 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
         </div>
       </div>
 
-      {/* Barra de progreso general */}
       <div className="mb-4">
         <div className="flex justify-between text-xs text-gray-400 mb-1">
           <span>Progreso General</span>
@@ -639,7 +740,6 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
         </div>
       </div>
 
-      {/* Lista de logros */}
       <div className="space-y-2">
         {achievements.map((achievement) => (
           <div
@@ -654,7 +754,6 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
               <div className={`p-2 rounded-full ${achievement.unlocked ? achievement.color : 'bg-gray-700'}`}>
                 {achievement.icon}
               </div>
-              
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h4 className={`font-semibold text-sm ${achievement.unlocked ? 'text-white' : 'text-gray-400'}`}>
@@ -665,8 +764,6 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
                   )}
                 </div>
                 <p className="text-xs text-gray-400">{achievement.description}</p>
-                
-                {/* Barra de progreso individual */}
                 {achievement.maxProgress && achievement.maxProgress > 1 && (
                   <div className="mt-2">
                     <div className="w-full bg-gray-700 rounded-full h-1">
@@ -681,7 +778,6 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
                   </div>
                 )}
               </div>
-              
               {achievement.unlocked && achievement.unlockedAt && (
                 <div className="text-xs text-gray-500">
                   {new Date(achievement.unlockedAt).toLocaleDateString()}
