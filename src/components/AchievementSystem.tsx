@@ -856,7 +856,7 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
           break;
 
         case 'speed_demon':
-          progress = sessions.filter(s => s.duration < 600).length; // menos de 10 minutos
+          progress = Math.min(sessions.filter(s => s.duration < 600).length, 10); // menos de 10 minutos, máximo 10
           if (!unlocked && progress >= 10) {
             unlocked = true;
             unlockedAt = Date.now();
