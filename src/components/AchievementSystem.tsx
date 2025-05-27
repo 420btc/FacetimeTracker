@@ -26,8 +26,6 @@ import {
   FaSnowflake, 
   FaCircle,
   FaClock,
-  FaGamepad,
-  FaThumbsUp,
   FaAtom,
   FaDragon,
   FaFeather,

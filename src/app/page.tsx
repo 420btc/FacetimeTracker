@@ -39,7 +39,7 @@ export default function Home() {
   
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const detectorRef = useRef<any>(null);
+  const detectorRef = useRef<{ estimateFaces: (video: HTMLVideoElement) => Promise<Array<{ keypoints: Array<{ x: number; y: number }> }>> } | null>(null);
   const wasFaceDetected = useRef(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isPageHiddenRef = useRef(false);
@@ -94,8 +94,8 @@ export default function Home() {
         
         // Load the faceLandmarksDetection model with more robust configuration
         const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
-        const detectorConfig: any = {
-          runtime: 'mediapipe',
+        const detectorConfig = {
+          runtime: 'mediapipe' as const,
           solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh',
           refineLandmarks: true,
           maxFaces: 1, // Optimize for single face detection
@@ -139,7 +139,7 @@ export default function Home() {
 
           try {
             // Make Detections - ALWAYS run, even when page is hidden
-            const faces = await detectorRef.current.estimateFaces(video);
+            const faces = await (detectorRef.current as any).estimateFaces(video);
             
             // Get canvas context
             const canvas = canvasRef.current;
@@ -200,16 +200,18 @@ export default function Home() {
                 const keypoints = face.keypoints;
                 
                 // Calculate bounding box based on keypoints
-                if (keypoints && keypoints.length > 0) {
+                if (keypoints && Array.isArray(keypoints) && keypoints.length > 0) {
                   let minX = Infinity, minY = Infinity;
                   let maxX = -Infinity, maxY = -Infinity;
                   
                   // Find keypoint boundaries
                   keypoints.forEach((keypoint: any) => {
-                    minX = Math.min(minX, keypoint.x);
-                    minY = Math.min(minY, keypoint.y);
-                    maxX = Math.max(maxX, keypoint.x);
-                    maxY = Math.max(maxY, keypoint.y);
+                    if (typeof keypoint.x === 'number' && typeof keypoint.y === 'number') {
+                      minX = Math.min(minX, keypoint.x);
+                      minY = Math.min(minY, keypoint.y);
+                      maxX = Math.max(maxX, keypoint.x);
+                      maxY = Math.max(maxY, keypoint.y);
+                    }
                   });
                   
                   // Add some margin
@@ -250,21 +252,25 @@ export default function Home() {
                 }
                 
                 // Draw facial landmark points
-                keypoints.forEach((keypoint: any, index: number) => {
-                  // MediaPipe FaceMesh keypoint indices for eyes
-                  const leftEyeIndices = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246];
-                  const rightEyeIndices = [362, 398, 384, 385, 386, 387, 388, 466, 263, 249, 390, 373, 374, 380, 381, 382];
-                  
-                  if (leftEyeIndices.includes(index) || rightEyeIndices.includes(index)) {
-                    ctx.fillStyle = '#00FF00'; // Green for eyes
-                  } else {
-                    ctx.fillStyle = '#FFFFFF'; // White for all other points
-                  }
-                  
-                  ctx.beginPath();
-                  ctx.arc(keypoint.x, keypoint.y, 1, 0, 2 * Math.PI); // Back to 1px as requested
-                  ctx.fill();
-                });
+                if (Array.isArray(keypoints)) {
+                  keypoints.forEach((keypoint: any, index: number) => {
+                    if (typeof keypoint.x === 'number' && typeof keypoint.y === 'number') {
+                      // MediaPipe FaceMesh keypoint indices for eyes
+                      const leftEyeIndices = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246];
+                      const rightEyeIndices = [362, 398, 384, 385, 386, 387, 388, 466, 263, 249, 390, 373, 374, 380, 381, 382];
+                      
+                      if (leftEyeIndices.includes(index) || rightEyeIndices.includes(index)) {
+                        ctx.fillStyle = '#00FF00'; // Green for eyes
+                      } else {
+                        ctx.fillStyle = '#FFFFFF'; // White for all other points
+                      }
+                      
+                      ctx.beginPath();
+                      ctx.arc(keypoint.x, keypoint.y, 1, 0, 2 * Math.PI); // Back to 1px as requested
+                      ctx.fill();
+                    }
+                  });
+                }
               });
             }
           } catch (error) {
@@ -381,6 +387,12 @@ export default function Home() {
       }
     };
   }, []);
+
+  // Effect to handle face detection state changes
+  useEffect(() => {
+    // This effect handles isFaceDetected state changes
+    console.log('Face detection state changed:', isFaceDetected);
+  }, [isFaceDetected]);
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex flex-col items-center justify-start p-4 overflow-y-auto">
