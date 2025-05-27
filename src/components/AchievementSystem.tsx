@@ -27,7 +27,24 @@ import {
   FaCircle,
   FaClock,
   FaGamepad,
-  FaThumbsUp
+  FaThumbsUp,
+  FaAtom,
+  FaDragon,
+  FaFeather,
+  FaGhost,
+  FaIcicles,
+  FaLeaf,
+  FaMountain,
+  FaPalette,
+  FaRainbow,
+  FaSpaceShuttle,
+  FaTree,
+  FaUmbrella,
+  FaWater,
+  FaWind,
+  FaGlobe,
+  FaHammer,
+  FaKey
 } from 'react-icons/fa';
 
 interface FaceSession {
@@ -58,6 +75,36 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [userLevel, setUserLevel] = useState(1);
   const [totalPoints, setTotalPoints] = useState(0);
+
+  // Función para calcular días consecutivos
+  const calculateConsecutiveDays = (sessions: FaceSession[]): number => {
+    if (sessions.length === 0) return 0;
+    
+    const uniqueDays = [...new Set(sessions.map(s => 
+      new Date(s.startTime).toDateString()
+    ))].sort();
+    
+    if (uniqueDays.length === 0) return 0;
+    
+    let maxConsecutive = 1;
+    let currentConsecutive = 1;
+    
+    for (let i = 1; i < uniqueDays.length; i++) {
+      const prevDate = new Date(uniqueDays[i - 1]);
+      const currentDate = new Date(uniqueDays[i]);
+      const diffTime = currentDate.getTime() - prevDate.getTime();
+      const diffDays = diffTime / (1000 * 60 * 60 * 24);
+      
+      if (diffDays === 1) {
+        currentConsecutive++;
+        maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
+      } else {
+        currentConsecutive = 1;
+      }
+    }
+    
+    return maxConsecutive;
+  };
 
   const achievementDefinitions: Achievement[] = useMemo(() => [
     // Logros básicos
@@ -336,6 +383,152 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
       icon: <FaMagic className="text-purple-500" />,
       color: 'bg-gradient-to-r from-purple-600 to-pink-600',
       maxProgress: 1
+    },
+    
+    // 17 Nuevos logros adicionales (34-50)
+    {
+      id: 'atomic_focus',
+      title: 'Enfoque Atómico',
+      description: 'Completa 15 sesiones de exactamente 25 minutos (Técnica Pomodoro)',
+      icon: <FaAtom className="text-red-400" />,
+      color: 'bg-gradient-to-r from-red-500 to-orange-500',
+      maxProgress: 15
+    },
+    {
+      id: 'dragon_slayer',
+      title: 'Cazador de Dragones',
+      description: 'Acumula 50 horas totales de enfoque',
+      icon: <FaDragon className="text-red-600" />,
+      color: 'bg-gradient-to-r from-red-600 to-black',
+      maxProgress: 180000
+    },
+    {
+      id: 'feather_light',
+      title: 'Pluma Ligera',
+      description: 'Completa 25 sesiones de menos de 5 minutos',
+      icon: <FaFeather className="text-cyan-300" />,
+      color: 'bg-gradient-to-r from-cyan-300 to-blue-300',
+      maxProgress: 25
+    },
+    {
+      id: 'ghost_mode',
+      title: 'Modo Fantasma',
+      description: 'Completa una sesión entre las 2:00 AM y 4:00 AM',
+      icon: <FaGhost className="text-gray-300" />,
+      color: 'bg-gradient-to-r from-gray-600 to-purple-800',
+      maxProgress: 1
+    },
+    {
+      id: 'ice_breaker',
+      title: 'Rompe Hielos',
+      description: 'Completa tu primera sesión después de 7 días de inactividad',
+      icon: <FaIcicles className="text-blue-200" />,
+      color: 'bg-gradient-to-r from-blue-200 to-cyan-400',
+      maxProgress: 1
+    },
+    {
+      id: 'nature_lover',
+      title: 'Amante de la Naturaleza',
+      description: 'Completa sesiones durante 4 estaciones diferentes (basado en meses)',
+      icon: <FaLeaf className="text-green-500" />,
+      color: 'bg-gradient-to-r from-green-400 to-emerald-500',
+      maxProgress: 4
+    },
+    {
+      id: 'mountain_climber',
+      title: 'Escalador de Montañas',
+      description: 'Alcanza 1000 sesiones totales',
+      icon: <FaMountain className="text-gray-600" />,
+      color: 'bg-gradient-to-r from-gray-500 to-stone-600',
+      maxProgress: 1000
+    },
+    {
+      id: 'artist_soul',
+      title: 'Alma de Artista',
+      description: 'Completa sesiones en 7 días diferentes de la semana',
+      icon: <FaPalette className="text-pink-400" />,
+      color: 'bg-gradient-to-r from-pink-400 to-purple-500',
+      maxProgress: 7
+    },
+    {
+      id: 'rainbow_warrior',
+      title: 'Guerrero del Arcoíris',
+      description: 'Desbloquea 25 logros diferentes',
+      icon: <FaRainbow className="text-yellow-300" />,
+      color: 'bg-gradient-to-r from-red-400 via-yellow-400 via-green-400 via-blue-400 to-purple-400',
+      maxProgress: 25
+    },
+    {
+      id: 'space_explorer',
+      title: 'Explorador Espacial',
+      description: 'Acumula 100 horas totales de enfoque',
+      icon: <FaSpaceShuttle className="text-indigo-400" />,
+      color: 'bg-gradient-to-r from-indigo-600 to-purple-700',
+      maxProgress: 360000
+    },
+    {
+      id: 'tree_hugger',
+      title: 'Abrazador de Árboles',
+      description: 'Mantén una racha de 60 días consecutivos',
+      icon: <FaTree className="text-green-600" />,
+      color: 'bg-gradient-to-r from-green-600 to-emerald-700',
+      maxProgress: 60
+    },
+    {
+      id: 'umbrella_master',
+      title: 'Maestro del Paraguas',
+      description: 'Completa 5 sesiones de más de 2 horas cada una',
+      icon: <FaUmbrella className="text-blue-500" />,
+      color: 'bg-gradient-to-r from-blue-500 to-indigo-600',
+      maxProgress: 5
+    },
+    {
+      id: 'water_drop',
+      title: 'Gota de Agua',
+      description: 'Completa 100 sesiones de menos de 15 minutos',
+      icon: <FaWater className="text-cyan-400" />,
+      color: 'bg-gradient-to-r from-cyan-400 to-blue-500',
+      maxProgress: 100
+    },
+    {
+      id: 'wind_dancer',
+      title: 'Danzarín del Viento',
+      description: 'Completa 3 sesiones en un solo día',
+      icon: <FaWind className="text-gray-400" />,
+      color: 'bg-gradient-to-r from-gray-400 to-slate-500',
+      maxProgress: 1
+    },
+    {
+      id: 'comet_chaser',
+      title: 'Cazador de Cometas',
+      description: 'Completa una sesión de exactamente 90 minutos',
+      icon: <FaRocket className="text-orange-300" />,
+      color: 'bg-gradient-to-r from-orange-400 to-red-500',
+      maxProgress: 1
+    },
+    {
+      id: 'world_traveler',
+      title: 'Viajero Mundial',
+      description: 'Completa sesiones en 12 meses diferentes',
+      icon: <FaGlobe className="text-blue-400" />,
+      color: 'bg-gradient-to-r from-blue-400 to-green-500',
+      maxProgress: 12
+    },
+    {
+      id: 'master_builder',
+      title: 'Maestro Constructor',
+      description: 'Construye una racha de 100 días consecutivos',
+      icon: <FaHammer className="text-yellow-600" />,
+      color: 'bg-gradient-to-r from-yellow-600 to-orange-600',
+      maxProgress: 100
+    },
+    {
+      id: 'key_holder',
+      title: 'Portador de Llaves',
+      description: 'Desbloquea todos los demás 49 logros',
+      icon: <FaKey className="text-gold-500" />,
+      color: 'bg-gradient-to-r from-yellow-500 via-gold-500 to-orange-500',
+      maxProgress: 49
     }
   ], []);
 
@@ -676,6 +869,188 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
           const hasZenSession = sessions.some(s => s.duration >= 14400) || currentSessionTime >= 14400; // 4 horas
           progress = hasZenSession ? 1 : 0;
           if (!unlocked && progress >= 1) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        // Nuevos logros adicionales (34-50)
+        case 'atomic_focus':
+          progress = sessions.filter(s => s.duration >= 1480 && s.duration <= 1520).length; // 25 minutos ±20 segundos
+          if (!unlocked && progress >= 15) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'dragon_slayer':
+          progress = Math.min(totalTime, 180000);
+          if (!unlocked && totalTime >= 180000) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'feather_light':
+          progress = sessions.filter(s => s.duration < 300).length; // menos de 5 minutos
+          if (!unlocked && progress >= 25) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'ghost_mode':
+          const hasGhostSession = sessions.some(s => {
+            const hour = new Date(s.startTime).getHours();
+            return hour >= 2 && hour < 4;
+          });
+          progress = hasGhostSession ? 1 : 0;
+          if (!unlocked && progress >= 1) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'ice_breaker':
+          // Verificar si hay una sesión después de 7 días de inactividad
+          const sortedSessions = [...sessions].sort((a, b) => a.startTime - b.startTime);
+          let hasIceBreaker = false;
+          for (let i = 1; i < sortedSessions.length; i++) {
+            const daysDiff = (sortedSessions[i].startTime - sortedSessions[i-1].startTime) / (1000 * 60 * 60 * 24);
+            if (daysDiff >= 7) {
+              hasIceBreaker = true;
+              break;
+            }
+          }
+          progress = hasIceBreaker ? 1 : 0;
+          if (!unlocked && progress >= 1) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'nature_lover':
+          const seasons = new Set(sessions.map(s => {
+            const month = new Date(s.startTime).getMonth();
+            if (month >= 2 && month <= 4) return 'spring';
+            if (month >= 5 && month <= 7) return 'summer';
+            if (month >= 8 && month <= 10) return 'autumn';
+            return 'winter';
+          }));
+          progress = seasons.size;
+          if (!unlocked && progress >= 4) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'mountain_climber':
+          progress = Math.min(sessions.length, 1000);
+          if (!unlocked && progress >= 1000) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'artist_soul':
+          const weekDays = new Set(sessions.map(s => new Date(s.startTime).getDay()));
+          progress = weekDays.size;
+          if (!unlocked && progress >= 7) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'rainbow_warrior':
+          const unlockedAchievements = achievements.filter(a => a.unlocked).length;
+          progress = Math.min(unlockedAchievements, 25);
+          if (!unlocked && unlockedAchievements >= 25) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'space_explorer':
+          progress = Math.min(totalTime, 360000);
+          if (!unlocked && totalTime >= 360000) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'tree_hugger':
+          // Calcular días consecutivos
+          const consecutiveDays = calculateConsecutiveDays(sessions);
+          progress = Math.min(consecutiveDays, 60);
+          if (!unlocked && consecutiveDays >= 60) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'umbrella_master':
+          progress = sessions.filter(s => s.duration >= 7200).length; // más de 2 horas
+          if (!unlocked && progress >= 5) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'water_drop':
+          progress = sessions.filter(s => s.duration < 900).length; // menos de 15 minutos
+          if (!unlocked && progress >= 100) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'wind_dancer':
+          const dailySessions = sessions.reduce((acc, session) => {
+            const day = new Date(session.startTime).toDateString();
+            acc[day] = (acc[day] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+          
+          const hasWindDancer = Object.values(dailySessions).some(count => count >= 3);
+          progress = hasWindDancer ? 1 : 0;
+          if (!unlocked && progress >= 1) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'comet_chaser':
+          const hasCometSession = sessions.some(s => s.duration >= 5380 && s.duration <= 5420) || 
+                                  (currentSessionTime >= 5380 && currentSessionTime <= 5420); // 90 minutos ±20 segundos
+          progress = hasCometSession ? 1 : 0;
+          if (!unlocked && progress >= 1) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'world_traveler':
+          const months = new Set(sessions.map(s => new Date(s.startTime).getMonth()));
+          progress = months.size;
+          if (!unlocked && progress >= 12) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'master_builder':
+          const consecutiveDaysBuilder = calculateConsecutiveDays(sessions);
+          progress = Math.min(consecutiveDaysBuilder, 100);
+          if (!unlocked && consecutiveDaysBuilder >= 100) {
+            unlocked = true;
+            unlockedAt = Date.now();
+          }
+          break;
+
+        case 'key_holder':
+          const totalUnlocked = achievements.filter(a => a.unlocked && a.id !== 'key_holder').length;
+          progress = Math.min(totalUnlocked, 49);
+          if (!unlocked && totalUnlocked >= 49) {
             unlocked = true;
             unlockedAt = Date.now();
           }

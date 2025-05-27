@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import { useSmartAlerts } from '../hooks/useSmartAlerts';
 
 const FaceSessionTracker = dynamic(() => import('../components/FaceSessionTracker'), { ssr: false });
-const AchievementSystem = dynamic(() => import('../components/AchievementSystem'), { ssr: false });
+const AchievementSystem = dynamic(() => import('../components/AchievementSystem').then(mod => ({ default: mod.default })), { ssr: false });
 const AnalyticsDashboard = dynamic(() => import('../components/AnalyticsDashboard'), { ssr: false });
 
 interface DetectionEvent {
@@ -196,7 +196,7 @@ export default function Home() {
             // Only draw visual elements if page is visible
             if (ctx && canvas && !isPageHiddenRef.current) {
               // Draw facial landmarks and bounding box
-              faces.forEach((face) => {
+              faces.forEach((face: any) => {
                 const keypoints = face.keypoints;
                 
                 // Calculate bounding box based on keypoints
