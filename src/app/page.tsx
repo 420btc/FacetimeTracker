@@ -30,7 +30,6 @@ export default function Home() {
   const [currentSessionTime, setCurrentSessionTime] = useState(0);
   const [isWebcamActive, setIsWebcamActive] = useState(true);
   const [isFaceDetected, setIsFaceDetected] = useState(false);
-  const [isMobileVersion, setIsMobileVersion] = useState(false);
   const [detectionHistory, setDetectionHistory] = useState<DetectionEvent[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('detectionHistory');
