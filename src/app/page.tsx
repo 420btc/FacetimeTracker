@@ -422,17 +422,6 @@ export default function Home() {
 
       {/* Main content container */}
       <div className="w-full max-w-6xl space-y-6">
-        {/* Mobile Version Button - Only visible on mobile */}
-      <div className="lg:hidden w-full mb-4">
-        <a 
-          href="https://facetrackerdos.vercel.app/webcam_face_detection"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-center"
-        >
-          🚀 Prueba más funciones!
-        </a>
-      </div>
 
       {/* Webcam and Session Tracker Row */}
       <div className="flex flex-col lg:flex-row gap-6">
@@ -662,6 +651,18 @@ export default function Home() {
           <div className="w-full lg:flex-1 scrollbar-hide">
             <AnalyticsDashboard sessions={faceSessions} />
           </div>
+        </div>
+
+        {/* Mobile Version Button - Only visible on mobile at the bottom */}
+        <div className="lg:hidden w-full mt-6">
+          <a 
+            href="https://facetrackerdos.vercel.app/webcam_face_detection"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors text-center"
+          >
+            🚀 Prueba más funciones!
+          </a>
         </div>
       </div>
     </main>

@@ -53,7 +53,7 @@ export const useSmartAlerts = ({
     if (typeof window === 'undefined') return;
 
     // Precargar la alarma
-    audioRef.current = new Audio('/alarma1.mp3');
+    audioRef.current = new Audio('/sounds/alarma1.mp3');
     audioRef.current.volume = 0.8;
     audioRef.current.load();
 
