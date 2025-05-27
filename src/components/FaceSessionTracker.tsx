@@ -16,12 +16,13 @@ interface FaceSessionTrackerProps {
   isFaceDetected: boolean;
   onWebcamToggle: () => void;
   isWebcamActive: boolean;
-  onRefreshDetection?: () => void;
+  isDetectionActive: boolean;
+  onToggleDetection: () => void;
   onSessionsChange?: (sessions: FaceSession[]) => void;
   onCurrentTimeChange?: (time: number) => void;
 }
 
-export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isWebcamActive, onRefreshDetection, onSessionsChange, onCurrentTimeChange }: FaceSessionTrackerProps) {
+export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isWebcamActive, isDetectionActive, onToggleDetection, onSessionsChange, onCurrentTimeChange }: FaceSessionTrackerProps) {
   const [currentSession, setCurrentSession] = useState<{
     startTime: number | null;
     elapsedTime: number;
@@ -257,14 +258,16 @@ export default function FaceSessionTracker({ isFaceDetected, onWebcamToggle, isW
             >
               {isWebcamActive ? 'Desactivar Cámara' : 'Activar Cámara'}
             </button>
-            {onRefreshDetection && (
-              <button
-                onClick={onRefreshDetection}
-                className="px-3 py-1.5 rounded-md text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Refrescar Detección
-              </button>
-            )}
+            <button
+              onClick={onToggleDetection}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                isDetectionActive 
+                  ? 'bg-orange-600 hover:bg-orange-700 text-white' 
+                  : 'bg-green-600 hover:bg-green-700 text-white'
+              }`}
+            >
+              {isDetectionActive ? 'Desactivar Detección' : 'Activar Detección'}
+            </button>
           </div>
         </div>
         

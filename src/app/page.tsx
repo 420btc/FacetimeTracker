@@ -29,6 +29,7 @@ export default function Home() {
   const [faceSessions, setFaceSessions] = useState<FaceSession[]>([]);
   const [currentSessionTime, setCurrentSessionTime] = useState(0);
   const [isWebcamActive, setIsWebcamActive] = useState(true);
+  const [isDetectionActive, setIsDetectionActive] = useState(true);
   const [isFaceDetected, setIsFaceDetected] = useState(false);
   const [detectionHistory, setDetectionHistory] = useState<DetectionEvent[]>(() => {
     if (typeof window !== 'undefined') {
@@ -70,7 +71,7 @@ export default function Home() {
 
   // Load and configure the model
   const runDetector = useCallback(async () => {
-    if (!isWebcamActive) return; // Only stop if webcam is off, NOT if page is hidden
+    if (!isWebcamActive || !isDetectionActive) return; // Stop if webcam is off OR detection is disabled
     
     // Cancel any existing timeout
     if (timeoutRef.current) {
@@ -109,11 +110,12 @@ export default function Home() {
 
       // Function to detect faces
       const detect = async () => {
-        // Always run detection if webcam is active, regardless of page visibility
+        // Run detection if webcam AND detection are both active, regardless of page visibility
         if (
           webcamRef.current?.video &&
           webcamRef.current.video?.readyState === 4 &&
-          detectorRef.current
+          detectorRef.current &&
+          isDetectionActive
         ) {
           const video = webcamRef.current.video;
           const videoWidth = video.videoWidth;
@@ -264,8 +266,8 @@ export default function Home() {
           } catch (error) {
             console.error('Error during face detection:', error);
           } finally {
-            // ALWAYS continue the detection loop if webcam is active (regardless of visibility)
-            if (isWebcamActive) {
+            // Continue the detection loop if webcam AND detection are both active (regardless of visibility)
+            if (isWebcamActive && isDetectionActive) {
               timeoutRef.current = setTimeout(detect, 100); // Changed from requestAnimationFrame
             }
           }
@@ -278,7 +280,7 @@ export default function Home() {
     } catch (error) {
       console.error('Error loading face detection model:', error);
     }
-  }, [isWebcamActive]); // Only depend on isWebcamActive to avoid circular dependency
+  }, [isWebcamActive, isDetectionActive]); // Depend on both webcam and detection states
 
   // Handle page visibility changes
   useEffect(() => {
@@ -312,25 +314,31 @@ export default function Home() {
     setIsWebcamActive(prev => !prev);
   };
 
-  // Function to refresh detection by simulating visibility change
-  const refreshDetection = () => {
-    console.log('Refreshing visual updates and detection state...');
-    
-    // Simply toggle the page visibility to force a visual refresh
-    isPageHiddenRef.current = true;
-    
-    // After a brief moment, resume visual updates
-    setTimeout(() => {
-      isPageHiddenRef.current = false;
-      console.log('Visual updates refreshed');
-    }, 100); // Shorter delay for better UX
+  // Function to toggle detection on/off
+  const toggleDetection = () => {
+    setIsDetectionActive(prev => {
+      const newState = !prev;
+      console.log(`Detection ${newState ? 'activated' : 'deactivated'}`);
+      
+      // If turning off detection, clear face detection state and canvas
+      if (!newState) {
+        setIsFaceDetected(false);
+        const canvas = canvasRef.current;
+        const ctx = canvas?.getContext('2d');
+        if (ctx && canvas) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      
+      return newState;
+    });
   };
 
-  // Effect to handle webcam state changes
+  // Effect to handle webcam and detection state changes
   useEffect(() => {
-    console.log('Webcam state changed:', { isWebcamActive, isFaceDetected });
+    console.log('State changed:', { isWebcamActive, isDetectionActive, isFaceDetected });
     
-    if (isWebcamActive) {
+    if (isWebcamActive && isDetectionActive) {
       // Request camera permissions explicitly
       navigator.mediaDevices.getUserMedia({ video: true })
         .then(stream => {
@@ -345,12 +353,12 @@ export default function Home() {
           setIsWebcamActive(false);
         });
     } else {
-      // Clean up timeout when turning off webcam
+      // Clean up timeout when turning off webcam or detection
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
-      // Clear canvas when webcam is off
+      // Clear canvas when webcam or detection is off
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext('2d');
       if (ctx && canvas) {
@@ -359,7 +367,7 @@ export default function Home() {
       // Reset face detection state
       setIsFaceDetected(false);
     }
-  }, [isWebcamActive, runDetector]);
+  }, [isWebcamActive, isDetectionActive, runDetector]);
 
   // Clean up on component unmount
   useEffect(() => {
@@ -447,8 +455,9 @@ export default function Home() {
             <FaceSessionTracker 
               isFaceDetected={isFaceDetected} 
               isWebcamActive={isWebcamActive}
+              isDetectionActive={isDetectionActive}
               onWebcamToggle={toggleWebcam}
-              onRefreshDetection={refreshDetection}
+              onToggleDetection={toggleDetection}
               onSessionsChange={setFaceSessions}
               onCurrentTimeChange={setCurrentSessionTime}
             />
