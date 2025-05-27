@@ -1082,8 +1082,6 @@ const AchievementSystem: React.FC<AchievementSystemProps> = ({ sessions, current
   }, [sessions, currentSessionTime, achievements, achievementDefinitions]);
 
   const unlockedCount = achievements.filter(a => a.unlocked).length;
-  const totalAchievements = achievementDefinitions.length;
-  const progressPercentage = (unlockedCount / achievements.length) * 100;
 
   return (
     <div className="p-4 bg-gray-900 bg-opacity-70 rounded-xl border border-gray-700 h-[280px] overflow-y-auto scrollbar-hide">

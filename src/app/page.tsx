@@ -391,7 +391,7 @@ export default function Home() {
       // Reset face detection state
       setIsFaceDetected(false);
     }
-  }, [isWebcamActive, isDetectionActive, runDetector]);
+  }, [isWebcamActive, isDetectionActive, runDetector, isFaceDetected]);
 
   // Clean up on component unmount
   useEffect(() => {
