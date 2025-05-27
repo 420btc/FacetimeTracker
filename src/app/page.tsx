@@ -30,6 +30,7 @@ export default function Home() {
   const [currentSessionTime, setCurrentSessionTime] = useState(0);
   const [isWebcamActive, setIsWebcamActive] = useState(true);
   const [isFaceDetected, setIsFaceDetected] = useState(false);
+  const [isMobileVersion, setIsMobileVersion] = useState(false);
   const [detectionHistory, setDetectionHistory] = useState<DetectionEvent[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('detectionHistory');
@@ -353,10 +354,22 @@ export default function Home() {
 
       {/* Main content container */}
       <div className="w-full max-w-6xl space-y-6">
-        {/* Webcam and Session Tracker Row */}
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Webcam */}
-          <div className="relative w-full lg:w-[640px] h-[480px] bg-black rounded-xl overflow-hidden">
+        {/* Mobile Version Button - Only visible on mobile */}
+      <div className="lg:hidden w-full mb-4">
+        <a 
+          href="https://facetrackerdos.vercel.app/webcam_face_detection"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-center"
+        >
+          📱 Versión Móvil
+        </a>
+      </div>
+
+      {/* Webcam and Session Tracker Row */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Webcam */}
+        <div className="relative w-full lg:w-[640px] h-[480px] bg-black rounded-xl overflow-hidden">
             {isWebcamActive ? (
               <Webcam
                 ref={webcamRef}
@@ -390,7 +403,17 @@ export default function Home() {
           </div>
           
           {/* Session Tracker - Sidebar */}
-          <div className="w-full lg:flex-1 h-[480px]">
+          <div className="w-full lg:flex-1 h-[422px]">
+            <div className="hidden lg:block mb-4">
+              <a 
+                href="https://facetrackerdos.vercel.app/webcam_face_detection"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-center"
+              >
+                📱 Versión Móvil
+              </a>
+            </div>
             <FaceSessionTracker 
               isFaceDetected={isFaceDetected} 
               isWebcamActive={isWebcamActive}
